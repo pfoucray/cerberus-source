@@ -1,33 +1,22 @@
 /*
- * File:        jquery.dataTables.grouping.js
- * Version:     1.1.6.
- * Author:      Jovan Popovic
+ * Cerberus  Copyright (C) 2013 - 2016  vertigo17
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * Copyright 2011 Jovan Popovic, all rights reserved.
+ * This file is part of Cerberus.
  *
- * This source file is free software, under either the GPL v2 license or a
- * BSD style license, as supplied with this software.
+ * Cerberus is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This source file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.
- * Parameters:
- * @iGroupingColumnIndex                                 Integer             Index of the column that will be used for grouping - default 0
- * @sGroupingColumnSortDirection                         Enumeration         Sort direction of the group
- * @iGroupingOrderByColumnIndex                          Integer             Index of the column that will be used for ordering groups
- * @sGroupingClass                                       String              Class that will be associated to the group row. Default - "group"
- * @bSetGroupingClassOnTR                                Boolean             If set class will be set to the TR instead of the TD withing the grouping TR
- * @bHideGroupingColumn                                  Boolean             Hide column used for grouping once results are grouped. Default - true
- * @bHideGroupingOrderByColumn                           Boolean             Hide column used for ordering groups once results are grouped. Default - true
- * @sGroupBy                                             Enumeration         Type of grouping that should be applied. Values "name"(default), "letter", "year"
- * @sGroupLabelPrefix                                    String              Prefix that will be added to each group cell
- * @bExpandableGrouping                                  Boolean             Attach expand/collapse handlers to the grouping rows
- * @bExpandSingleGroup                                   Boolean             Use accordon grouping
- * @iExpandGroupOffset                                   Integer             Number of pixels to set scroll position above the currently selected group. If -1 scroll will be alligned to the table
- * General settings
- * @sDateFormat: "dd/MM/yyyy"                            String              Date format used for grouping
- * @sEmptyGroupLabel                                     String              Lable that will be placed as group if grouping cells are empty. Default "-"
-
+ * Cerberus is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
+ */
  * Parameters used in the second level grouping
  * @iGroupingColumnIndex2                                Integer             Index of the secondary column that will be used for grouping - default 0
  * @sGroupingColumnSortDirection2                        Enumeration         Sort direction of the secondary group

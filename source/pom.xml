@@ -1,3 +1,24 @@
+<!--
+
+    Cerberus  Copyright (C) 2013 - 2016  vertigo17
+    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+
+    This file is part of Cerberus.
+
+    Cerberus is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Cerberus is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
@@ -8,6 +29,7 @@
     <packaging>war</packaging>
 
     <name>Cerberus</name>
+    <inceptionYear>2013</inceptionYear>
 
     <properties>
         <!-- Version management -->
@@ -43,7 +65,7 @@
         <gson.version>2.3.1</gson.version>
         <jsonxpath.version>1.2.0</jsonxpath.version>
         <poi.version>3.13</poi.version>
-        
+
         <!-- Maven plugin version -->
         <maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.10</maven-surefire-plugin.version>
@@ -54,6 +76,7 @@
         <maven-deploy-plugin.version>2.5</maven-deploy-plugin.version>
         <maven-antrun-plugin.version>1.7</maven-antrun-plugin.version>
         <maven-assembly-plugin.version>2.4.1</maven-assembly-plugin.version>
+        <license-maven-plugin.version>2.3</license-maven-plugin.version>
         <javaee-endorsed-api.version>6.0</javaee-endorsed-api.version>
         <jsch.version>0.1.42</jsch.version>
         <ant-jsch.version>1.8.2</ant-jsch.version>
@@ -143,18 +166,18 @@
                     <groupId>cglib</groupId>
                     <artifactId>cglib</artifactId>
                 </exclusion>
-            </exclusions> 
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>${selenium.version}</version>   
+            <version>${selenium.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.seleniumhq.selenium</groupId>
                     <artifactId>selenium-firefox-driver</artifactId>
                 </exclusion>
-            </exclusions>             
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
@@ -294,14 +317,14 @@
             <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- System path -->
-                <dependency>
+        <dependency>
             <groupId>harlib</groupId>
             <artifactId>harlib</artifactId>
             <version>${harlib.version}</version>
             <scope>system</scope>
-        <systemPath>${basedir}/src/main/webapp/WEB-INF/lib/harlib-${harlib.version}.jar</systemPath>
+            <systemPath>${basedir}/src/main/webapp/WEB-INF/lib/harlib-${harlib.version}.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.elfinder</groupId>
@@ -330,7 +353,7 @@
 
     <build>
         <finalName>${project.name}-${project.version}</finalName>
-        
+
         <resources>
             <!-- Filter the lang property files -->
             <resource>
@@ -342,7 +365,7 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        
+
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -460,6 +483,33 @@
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>${license-maven-plugin.version}</version>
+                <configuration>
+                    <failIfMissing>true</failIfMissing>
+                    <strictCheck>true</strictCheck>
+                    <header>${basedir}/licenseheader.txt</header>
+                    <includes>
+                         <include>**/*.java</include>
+                         <include>**/*.jsp</include>
+                         <include>**/*.js</include> 
+                        <include>**/*.xml</include> 
+                        <include>**/*.xsd</include> 
+                    </includes>
+                    <excludes></excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-headers</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>

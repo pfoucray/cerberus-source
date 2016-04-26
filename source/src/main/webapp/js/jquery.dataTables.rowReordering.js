@@ -1,21 +1,21 @@
 /*
- * File:        jquery.dataTables.rowReordering.js
- * Version:     1.0.0.
- * Author:      Jovan Popovic
+ * Cerberus  Copyright (C) 2013 - 2016  vertigo17
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * Copyright 2012 Jovan Popovic, all rights reserved.
+ * This file is part of Cerberus.
  *
- * This source file is free software, under either the GPL v2 license or a
- * BSD style license, as supplied with this software.
+ * Cerberus is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This source file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.
+ * Cerberus is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * Parameters:
- * @iIndexColumn     int         Position of the indexing column
- * @sURL             String      Server side page tat will be notified that order is changed
- * @iGroupingLevel   int         Defines that grouping is used
+ * You should have received a copy of the GNU General Public License
+ * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
 (function ($) {
 

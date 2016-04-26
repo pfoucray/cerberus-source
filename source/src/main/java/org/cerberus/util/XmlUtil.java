@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus  Copyright (C) 2013 - 2016  vertigo17
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -317,6 +317,7 @@ public final class XmlUtil {
 		try {
 			InputSource sourceInput = new InputSource(new StringReader(xml));
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setIgnoringComments(true);
 			factory.setNamespaceAware(namespaceAwareness);
 			return factory.newDocumentBuilder().parse(sourceInput);
 		} catch (ParserConfigurationException e) {
@@ -358,6 +359,7 @@ public final class XmlUtil {
 		try {
 			BufferedInputStream streamInput = new BufferedInputStream(url.openStream());
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setIgnoringComments(true);
 			factory.setNamespaceAware(namespaceAwareness);
 			return factory.newDocumentBuilder().parse(streamInput);
 		} catch (ParserConfigurationException e) {
