@@ -84,7 +84,7 @@ public class SoapService implements ISoapService {
         boolean is12SoapVersion = SOAP_1_2_NAMESPACE_PATTERN.matcher(unescapedEnvelope).matches();
 
         MimeHeaders headers = new MimeHeaders();
-        headers.addHeader("SOAPAction", method);
+        headers.addHeader("SOAPAction", "\""+method+"\"");
         headers.addHeader("Content-Type", is12SoapVersion ? SOAPConstants.SOAP_1_2_CONTENT_TYPE : SOAPConstants.SOAP_1_1_CONTENT_TYPE);
 
         InputStream input = new ByteArrayInputStream(unescapedEnvelope.getBytes("UTF-8"));
@@ -121,7 +121,7 @@ public class SoapService implements ISoapService {
         SOAPExecution executionSOAP = new SOAPExecution();
         ByteArrayOutputStream out = null;
         MessageEvent message = null;
-
+        
         if (StringUtils.isNullOrEmpty(servicePath)) {
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP_SERVICEPATHMISSING);
             result.setResultMessage(message);
@@ -176,7 +176,9 @@ public class SoapService implements ISoapService {
             executionSOAP.setSOAPResponse(soapResponse);
 
             message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_CALLSOAP);
-            message.setDescription(message.getDescription().replace("%SOAPNAME%", method));
+            message.setDescription(message.getDescription()
+                    .replace("%SERVICEPATH%", servicePath)
+                    .replace("%SOAPMETHOD%", method));
             result.setItem(executionSOAP);
 
         } catch (SOAPException | UnsupportedOperationException | IOException | SAXException | ParserConfigurationException | CerberusException e) {
@@ -184,7 +186,7 @@ public class SoapService implements ISoapService {
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
             message.setDescription(message.getDescription()
                     .replace("%SERVICEPATH%", servicePath)
-                    .replace("%SOAPNAME%", method)
+                    .replace("%SOAPMETHOD%", method)
                     .replace("%DESCRIPTION%", e.getMessage()));
             result.setResultMessage(message);
             return result;

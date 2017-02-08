@@ -34,22 +34,19 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.cerberus.crud.entity.*;
 import org.cerberus.crud.service.*;
 import org.cerberus.engine.entity.ExecutionUUID;
 import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.crud.entity.Robot;
-import org.cerberus.crud.entity.RobotCapability;
-import org.cerberus.crud.entity.TestCase;
-import org.cerberus.crud.entity.TestCaseCountry;
-import org.cerberus.crud.entity.TestCaseExecution;
 import org.cerberus.crud.factory.IFactoryTestCaseExecution;
+import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.engine.execution.IRunTestCaseService;
 import org.cerberus.util.DateUtil;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.StringUtil;
-import org.cerberus.util.answer.AnswerList;
+import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.version.Infos;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -125,7 +122,7 @@ public class RunTestCase extends HttpServlet {
         boolean synchroneous = true;
         int getPageSource = 0;
         int getSeleniumLog = 0;
-        String manualExecution = "";
+        boolean manualExecution = false;
         List<RobotCapability> capabilities = null;
 
         //Test
@@ -152,7 +149,7 @@ public class RunTestCase extends HttpServlet {
         synchroneous = ParameterParserUtil.parseBooleanParam(request.getParameter("synchroneous"), true);
         getPageSource = ParameterParserUtil.parseIntegerParam(request.getParameter("pageSource"), 1);
         getSeleniumLog = ParameterParserUtil.parseIntegerParam(request.getParameter("seleniumLog"), 1);
-        manualExecution = ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("manualExecution"), "N");
+        manualExecution = ParameterParserUtil.parseBooleanParam(request.getParameter("manualExecution"), false);
         long idFromQueue = ParameterParserUtil.parseIntegerParam(request.getParameter("IdFromQueue"), 0);
         int numberOfRetries = ParameterParserUtil.parseIntegerParam(request.getParameter("retries"), 0);
         screenSize = ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("screenSize"), "");
@@ -218,23 +215,7 @@ public class RunTestCase extends HttpServlet {
             out.println("Error - Parameter environment is mandatory (or use the manualURL parameter).");
             error = true;
         }
-        //verify the format of the ScreenSize. It must be 2 integer separated by a *. For example : 1024*768
-        if (!"".equals(screenSize)) {
-            if (!screenSize.contains("*")) {
-                out.println("Error - ScreenSize format is not Correct. It must be 2 Integer separated by a *.");
-                error = true;
-            } else {
-                try {
-                    String screenWidth = screenSize.split("\\*")[0];
-                    String screenLength = screenSize.split("\\*")[1];
-                    Integer.parseInt(screenWidth);
-                    Integer.parseInt(screenLength);
-                } catch (Exception e) {
-                    out.println("Error - ScreenSize format is not Correct. It must be 2 Integer separated by a *.");
-                    error = true;
-                }
-            }
-        }
+        
         // We check that execution is not desactivated by cerberus_automaticexecution_enable parameter.
         IParameterService parameterService = appContext.getBean(IParameterService.class);
         try {
@@ -261,6 +242,7 @@ public class RunTestCase extends HttpServlet {
                 active = robObj.getActive();
                 userAgent = robObj.getUserAgent();
                 capabilities = robObj.getCapabilities();
+                screenSize = robObj.getScreenSize();
             } catch (CerberusException ex) {
                 out.println("Error - Robot [" + robot + "] does not exist.");
                 error = true;
@@ -271,6 +253,25 @@ public class RunTestCase extends HttpServlet {
             out.println("Error - Robot is not Active.");
             error = true;
         }
+        
+        //verify the format of the ScreenSize. It must be 2 integer separated by a *. For example : 1024*768
+        if (!"".equals(screenSize)) {
+            if (!screenSize.contains("*")) {
+                out.println("Error - ScreenSize format is not Correct. It must be 2 Integer separated by a *.");
+                error = true;
+            } else {
+                try {
+                    String screenWidth = screenSize.split("\\*")[0];
+                    String screenLength = screenSize.split("\\*")[1];
+                    Integer.parseInt(screenWidth);
+                    Integer.parseInt(screenLength);
+                } catch (Exception e) {
+                    out.println("Error - ScreenSize format is not Correct. It must be 2 Integer separated by a *.");
+                    error = true;
+                }
+            }
+        }
+        
 
         if (!error) {
             //check if the test case is to be executed in the specific parameters            
@@ -304,11 +305,12 @@ public class RunTestCase extends HttpServlet {
                 ITestCaseExecutionService tces = appContext.getBean(ITestCaseExecutionService.class);
                 TestCase tCase = factoryTCase.create(test, testCase);
 
-                TestCaseExecution tCExecution = factoryTCExecution.create(0, test, testCase, null, null, environment, country, browser, version, platform, "", capabilities,
+                TestCaseExecution tCExecution = factoryTCExecution.create(0, test, testCase, null, null, environment, myEnvData, country, browser, version, platform, "",
                         0, 0, "", "", null, ss_ip, null, ss_p, tag, "N", verbose, screenshot, getPageSource, getSeleniumLog, synchroneous, timeout, outputFormat, null,
                         Infos.getInstance().getProjectNameAndVersion(), tCase, null, null, manualURL, myHost, myContextRoot, myLoginRelativeURL, myEnvData, ss_ip, ss_p,
-                        null, new MessageGeneral(MessageGeneralEnum.EXECUTION_PE_TESTSTARTED), "Selenium", numberOfRetries, screenSize);
-
+                        null, new MessageGeneral(MessageGeneralEnum.EXECUTION_PE_TESTSTARTED), "Selenium", numberOfRetries, screenSize, capabilities,
+                        "", "", "", "", "", manualExecution);
+                
                 /**
                  * Set UserAgent
                  */
@@ -332,34 +334,16 @@ public class RunTestCase extends HttpServlet {
                  * Loop on the execution of the testcase until we get an OK or
                  * reached the number of retries.
                  */
-                while (tCExecution.getNumberOfRetries() >= 0 && !tCExecution.getResultMessage().getCodeString().equals("OK")) {
+                //while (tCExecution.getNumberOfRetries() >= 0 && !tCExecution.getResultMessage().getCodeString().equals("OK")) {
                     try {
                         LOG.debug("Start execution " + tCExecution.getId());
                         tCExecution = runTestCaseService.runTestCase(tCExecution);
-                        tCExecution.decreaseNumberOfRetries();
+                     //   tCExecution.decreaseNumberOfRetries();
                     } catch (Exception ex) {
                         LOG.error("Error while executing RunTestCase ", ex);
-                        break;
+                  //      break;
                     }
-                }
-
-                /**
-                 * If execution from queue, remove it from the queue or update
-                 * information in Queue
-                 */
-                try {
-                    if (tCExecution.getIdFromQueue() != 0) {
-                        ITestCaseExecutionInQueueService testCaseExecutionInQueueService = appContext.getBean(ITestCaseExecutionInQueueService.class);
-                        MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_SELENIUM_COULDNOTCONNECT);
-                        if (tCExecution.getResultMessage().getCode() == mes.getCode()) { // There was an issue on the execution so we keep it in the queue and update the message.
-                            testCaseExecutionInQueueService.updateComment(tCExecution.getIdFromQueue(), tCExecution.getResultMessage().getDescription());
-                        } else { // Execution was fine (technically) so we remove it from the queue.
-                            testCaseExecutionInQueueService.remove(tCExecution.getIdFromQueue());
-                        }
-                    }
-                } catch (CerberusException ex) {
-                    LOG.error("Error while performin testcase in queue ", ex);
-                }
+               // }
 
                 /**
                  * If execution happened, we Log the Execution.
@@ -389,7 +373,17 @@ public class RunTestCase extends HttpServlet {
                 long runID = tCExecution.getId();
                 if (outputFormat.equalsIgnoreCase("gui")) { // HTML GUI output. either the detailed execution page or an error page when the execution is not created.
                     if (runID > 0) { // Execution has been created.
-                        response.sendRedirect("./ExecutionDetail2.jsp?executionId=" + runID);
+                        AnswerItem a = parameterService.readByKey("","cerberus_executiondetail_use");
+                        if(a.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && a.getItem() != null) {
+                            Parameter p = (Parameter)a.getItem();
+                            if(!p.getValue().equals("N")) {
+                                response.sendRedirect("ExecutionDetail2.jsp?executionId=" + runID);
+                            }else{
+                                response.sendRedirect("ExecutionDetail.jsp?id_tc=" + runID);
+                            }
+                        }else{
+                            response.sendRedirect("ExecutionDetail.jsp?id_tc=" + runID);
+                        }
                     } else { // Execution was not even created.
                         response.setContentType("text/html");
                         out.println("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>Test Execution Result</title></head>");
@@ -411,10 +405,13 @@ public class RunTestCase extends HttpServlet {
                         out.println("<tr><td>Robot</td><td><span id='Robot'>" + robot + "</span></td></tr>");
                         out.println("<tr><td>Selenium Server IP</td><td><span id='SeleniumIP'>" + ss_ip + "</span></td></tr>");
                         out.println("<tr><td>Selenium Server Port</td><td><span id='SeleniumPort'>" + ss_p + "</span></td></tr>");
-                        out.println("<tr><td>Robot</td><td><span id='Robot'>" + robot + "</span></td></tr>");
+                        out.println("<tr><td>Timeout</td><td><span id='Timeout'>" + timeout + "</span></td></tr>");
+                        out.println("<tr><td>Synchroneous</td><td><span id='Synchroneous'>" + synchroneous + "</span></td></tr>");
                         out.println("<tr><td>Browser</td><td><span id='Browser'>" + browser + "</span></td></tr>");
                         out.println("<tr><td>Version</td><td><span id='Version'>" + version + "</span></td></tr>");
                         out.println("<tr><td>Platform</td><td><span id='Platform'>" + platform + "</span></td></tr>");
+                        out.println("<tr><td>Screen Size</td><td><span id='screenSize'>" + screenSize + "</span></td></tr>");
+                        out.println("<tr><td>Number of Retry</td><td><span id='nbretry'>" + numberOfRetries + "</span></td></tr>");
                         out.println("<tr><td>ManualURL</td><td><span id='ManualURL'>" + tCExecution.isManualURL() + "</span></td></tr>");
                         out.println("<tr><td>MyHost</td><td><span id='MyHost'>" + tCExecution.getMyHost() + "</span></td></tr>");
                         out.println("<tr><td>MyContextRoot</td><td><span id='MyContextRoot'>" + tCExecution.getMyContextRoot() + "</span></td></tr>");
@@ -429,7 +426,7 @@ public class RunTestCase extends HttpServlet {
                         out.println("<tr>"
                                 + "<td><input id=\"ButtonRetry\" type=\"button\" value=\"Retry\" onClick=\"window.location.reload()\"></td>"
                                 + "<td><input id=\"ButtonBack\" type=\"button\" value=\"Go Back\" onClick=\"window.history.back()\"></td>"
-                                + "<td><input id=\"ButtonOpenTC\" type=\"button\" value=\"Open Test Case\" onClick=\"window.open('TestCase.jsp?Test=" + test + "&TestCase=" + testCase + "&Load=Load')\"></td>"
+                                + "<td><input id=\"ButtonOpenTC\" type=\"button\" value=\"Open Test Case\" onClick=\"window.open('TestCaseScript.jsp?test=" + test + "&testcase=" + testCase + "')\"></td>"
                                 + "</tr>");
                         out.println("</table>");
                         out.println("</body>");
@@ -453,9 +450,15 @@ public class RunTestCase extends HttpServlet {
                     out.println("PageSource" + separator + getPageSource);
                     out.println("SeleniumLog" + separator + getSeleniumLog);
                     out.println("Robot" + separator + robot);
+                    out.println("Selenium Server IP" + separator + ss_ip);
+                    out.println("Selenium Server Port" + separator + ss_p);
+                    out.println("Timeout" + separator + timeout);
+                    out.println("Synchroneous" + separator + synchroneous);
                     out.println("Browser" + separator + browser);
                     out.println("Version" + separator + version);
                     out.println("Platform" + separator + platform);
+                    out.println("ScreenSize" + separator + screenSize);
+                    out.println("Nb Of Retry" + separator + numberOfRetries);
                     out.println("ManualURL" + separator + tCExecution.isManualURL());
                     out.println("MyHost" + separator + tCExecution.getMyHost());
                     out.println("MyContextRoot" + separator + tCExecution.getMyContextRoot());

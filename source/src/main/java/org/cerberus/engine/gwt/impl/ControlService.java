@@ -19,7 +19,9 @@
  */
 package org.cerberus.engine.gwt.impl;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -27,10 +29,12 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.cerberus.engine.entity.Identifier;
 import org.cerberus.engine.entity.MessageEvent;
+import org.cerberus.engine.gwt.IVariableService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.engine.entity.SOAPExecution;
 import org.cerberus.crud.entity.TestCaseExecution;
+import org.cerberus.crud.entity.TestCaseExecutionFile;
 import org.cerberus.crud.entity.TestCaseStepActionControlExecution;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
 import org.cerberus.exception.CerberusEventException;
@@ -73,10 +77,13 @@ public class ControlService implements IControlService {
     private ISikuliService sikuliService;
     @Autowired
     private IRecorderService recorderService;
+    @Autowired
+    private IVariableService variableService;
 
     @Override
     public TestCaseStepActionControlExecution doControl(TestCaseStepActionControlExecution testCaseStepActionControlExecution) {
         MessageEvent res;
+        TestCaseExecution tCExecution = testCaseStepActionControlExecution.getTestCaseStepActionExecution().getTestCaseStepExecution().gettCExecution();
 
         /**
          * Decode the 2 fields property and values before doing the control.
@@ -88,7 +95,8 @@ public class ControlService implements IControlService {
             //if the property service was unable to decode the property that is specified in the object, 
             //then the execution of this control should not performed
             if (testCaseStepActionControlExecution.getValue1().contains("%")) {
-                testCaseStepActionControlExecution.setValue1(propertyService.decodeValueWithExistingProperties(testCaseStepActionControlExecution.getValue1(), testCaseStepActionControlExecution.getTestCaseStepActionExecution(), false));
+                testCaseStepActionControlExecution.setValue1(variableService.decodeStringCompletly(testCaseStepActionControlExecution.getValue1(),
+                        tCExecution, testCaseStepActionControlExecution.getTestCaseStepActionExecution(), false));
 
                 if (!isPropertyGetValueSucceed(testCaseStepActionControlExecution)) {
                     return testCaseStepActionControlExecution;
@@ -96,7 +104,8 @@ public class ControlService implements IControlService {
             }
 
             if (testCaseStepActionControlExecution.getValue2().contains("%")) {
-                testCaseStepActionControlExecution.setValue2(propertyService.decodeValueWithExistingProperties(testCaseStepActionControlExecution.getValue2(), testCaseStepActionControlExecution.getTestCaseStepActionExecution(), false));
+                testCaseStepActionControlExecution.setValue2(variableService.decodeStringCompletly(testCaseStepActionControlExecution.getValue2(),
+                        tCExecution, testCaseStepActionControlExecution.getTestCaseStepActionExecution(), false));
 
                 if (!isPropertyGetValueSucceed(testCaseStepActionControlExecution)) {
                     return testCaseStepActionControlExecution;
@@ -114,8 +123,6 @@ public class ControlService implements IControlService {
          */
         testCaseStepActionControlExecution.setStart(new Date().getTime());
 
-        TestCaseExecution tCExecution = testCaseStepActionControlExecution.getTestCaseStepActionExecution().getTestCaseStepExecution().gettCExecution();
-
         try {
             //TODO On JDK 7 implement switch with string
             if (testCaseStepActionControlExecution.getControl().equals("verifyStringEqual")) {
@@ -129,7 +136,7 @@ public class ControlService implements IControlService {
 
             } else if (testCaseStepActionControlExecution.getControl().equals("verifyStringMinor")) {
                 res = this.verifyStringMinor(testCaseStepActionControlExecution.getValue1(), testCaseStepActionControlExecution.getValue2());
-                
+
             } else if (testCaseStepActionControlExecution.getControl().equals("verifyStringContains")) {
                 res = this.verifyStringContains(testCaseStepActionControlExecution.getValue1(), testCaseStepActionControlExecution.getValue2());
 
@@ -141,7 +148,7 @@ public class ControlService implements IControlService {
 
             } else if (testCaseStepActionControlExecution.getControl().equals("verifyIntegerGreater")) {
                 res = this.verifyIntegerGreater(testCaseStepActionControlExecution.getValue1(), testCaseStepActionControlExecution.getValue2());
-                
+
             } else if (testCaseStepActionControlExecution.getControl().equals("verifyIntegerMinor")) {
                 res = this.verifyIntegerMinor(testCaseStepActionControlExecution.getValue1(), testCaseStepActionControlExecution.getValue2());
 
@@ -210,9 +217,6 @@ public class ControlService implements IControlService {
             } else if (testCaseStepActionControlExecution.getControl().equals("getPageSource")) {
                 res = this.getPageSource(tCExecution, testCaseStepActionControlExecution.getTestCaseStepActionExecution(), testCaseStepActionControlExecution);
 
-            } else if (testCaseStepActionControlExecution.getControl().equals("skipControl")) {
-                res = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_SKIPCONTROL);
-
             } else {
                 res = new MessageEvent(MessageEventEnum.CONTROL_FAILED_UNKNOWNCONTROL);
                 res.setDescription(res.getDescription().replace("%CONTROL%", testCaseStepActionControlExecution.getControl()));
@@ -275,85 +279,85 @@ public class ControlService implements IControlService {
 
     }
 
-    private MessageEvent verifyStringContains(String property, String value) {
+    private MessageEvent verifyStringContains(String value1, String value2) {
         MessageEvent mes;
-        if (property.indexOf(value) >= 0) {
+        if (value1.indexOf(value2) >= 0) {
             mes = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_CONTAINS);
-            mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-            mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+            mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+            mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
             return mes;
         }
         mes = new MessageEvent(MessageEventEnum.CONTROL_FAILED_CONTAINS);
-        mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-        mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+        mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+        mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
         return mes;
 
     }
 
-    private MessageEvent verifyStringGreater(String property, String value) {
+    private MessageEvent verifyStringGreater(String value1, String value2) {
         MessageEvent mes;
-        if (property.compareToIgnoreCase(value) > 0) {
+        if (value1.compareToIgnoreCase(value2) > 0) {
             mes = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_GREATER);
-            mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-            mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+            mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+            mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
             return mes;
         } else {
             mes = new MessageEvent(MessageEventEnum.CONTROL_FAILED_GREATER);
-            mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-            mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+            mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+            mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
             return mes;
         }
     }
 
-    private MessageEvent verifyStringMinor(String property, String value) {
+    private MessageEvent verifyStringMinor(String value1, String value2) {
         MessageEvent mes;
-        if (property.compareToIgnoreCase(value) < 0) {
+        if (value1.compareToIgnoreCase(value2) < 0) {
             mes = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_MINOR);
-            mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-            mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+            mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+            mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
             return mes;
         } else {
             mes = new MessageEvent(MessageEventEnum.CONTROL_FAILED_MINOR);
-            mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-            mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+            mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+            mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
             return mes;
         }
     }
 
-    private MessageEvent verifyIntegerGreater(String property, String value) {
+    private MessageEvent verifyIntegerGreater(String value1, String value2) {
         MessageEvent mes;
-        if (StringUtil.isNumeric(property) && StringUtil.isNumeric(value)) {
-            int prop = Integer.parseInt(property);
-            int val = Integer.parseInt(value);
+        if (StringUtil.isInteger(value1) && StringUtil.isInteger(value2)) {
+            int prop = Integer.parseInt(value1);
+            int val = Integer.parseInt(value2);
             if (prop > val) {
                 mes = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_GREATER);
-                mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-                mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+                mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+                mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
                 return mes;
             } else {
                 mes = new MessageEvent(MessageEventEnum.CONTROL_FAILED_GREATER);
-                mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-                mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+                mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+                mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
                 return mes;
             }
         }
         return new MessageEvent(MessageEventEnum.CONTROL_FAILED_PROPERTY_NOTNUMERIC);
     }
 
-    private MessageEvent verifyIntegerMinor(String property, String value) {
+    private MessageEvent verifyIntegerMinor(String value1, String value2) {
         MessageEvent mes;
-        if (StringUtil.isNumeric(property) && StringUtil.isNumeric(value)) {
-            int prop = Integer.parseInt(property);
-            int val = Integer.parseInt(value);
+        if (StringUtil.isInteger(value1) && StringUtil.isInteger(value2)) {
+            int prop = Integer.parseInt(value1);
+            int val = Integer.parseInt(value2);
             if (prop < val) {
                 mes = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_MINOR);
-                mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-                mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+                mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+                mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
                 return mes;
             } else {
                 mes = new MessageEvent(MessageEventEnum.CONTROL_FAILED_MINOR);
-                mes.setDescription(mes.getDescription().replace("%STRING1%", property));
-                mes.setDescription(mes.getDescription().replace("%STRING2%", value));
+                mes.setDescription(mes.getDescription().replace("%STRING1%", value1));
+                mes.setDescription(mes.getDescription().replace("%STRING2%", value2));
                 return mes;
             }
         }
@@ -361,7 +365,7 @@ public class ControlService implements IControlService {
     }
 
     private MessageEvent verifyIntegerEquals(String property, String value) {
-        if (StringUtil.isNumeric(property) && StringUtil.isNumeric(value)) {
+        if (StringUtil.isInteger(property) && StringUtil.isInteger(value)) {
             MessageEvent mes = Integer.parseInt(property) == Integer.parseInt(value) ? new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_EQUAL) : new MessageEvent(MessageEventEnum.CONTROL_FAILED_EQUAL);
             mes.setDescription(mes.getDescription().replace("%STRING1%", property));
             mes.setDescription(mes.getDescription().replace("%STRING2%", value));
@@ -371,7 +375,7 @@ public class ControlService implements IControlService {
     }
 
     private MessageEvent verifyIntegerDifferent(String property, String value) {
-        if (StringUtil.isNumeric(property) && StringUtil.isNumeric(value)) {
+        if (StringUtil.isInteger(property) && StringUtil.isInteger(value)) {
             MessageEvent mes = Integer.parseInt(property) != Integer.parseInt(value) ? new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_DIFFERENT) : new MessageEvent(MessageEventEnum.CONTROL_FAILED_DIFFERENT);
             mes.setDescription(mes.getDescription().replace("%STRING1%", property));
             mes.setDescription(mes.getDescription().replace("%STRING2%", value));
@@ -383,11 +387,14 @@ public class ControlService implements IControlService {
     private MessageEvent verifyElementPresent(TestCaseExecution tCExecution, String html) {
         MyLogger.log(ControlService.class.getName(), Level.DEBUG, "Control : verifyElementPresent on : " + html);
         MessageEvent mes;
+
         if (!StringUtil.isNull(html)) {
+            Identifier identifier = identifierService.convertStringToIdentifier(html);
+
             if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")
-                    || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")) {
+                    || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
+                    || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
                 try {
-                    Identifier identifier = identifierService.convertStringToIdentifier(html);
                     if (identifier.getIdentifier().equals("picture")) {
                         return sikuliService.doSikuliAction(tCExecution.getSession(), "verifyElementPresent", identifier.getLocator(), "");
                     } else if (this.webdriverService.isElementPresent(tCExecution.getSession(), identifier)) {
@@ -414,6 +421,8 @@ public class ControlService implements IControlService {
                     mes.setDescription(mes.getDescription().replace("%STRING1%", html));
                     return mes;
                 }
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "verifyElementPresent", identifier.getLocator(), "");
             } else {
                 mes = new MessageEvent(MessageEventEnum.CONTROL_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION);
                 mes.setDescription(mes.getDescription().replace("%CONTROL%", "VerifyElementPresent"));
@@ -588,7 +597,8 @@ public class ControlService implements IControlService {
             Identifier identifier = identifierService.convertStringToIdentifier(path);
             String applicationType = tCExecution.getApplicationObj().getType();
 
-            if ("GUI".equalsIgnoreCase(applicationType) || "APK".equalsIgnoreCase(applicationType)) {
+            if ("GUI".equalsIgnoreCase(applicationType) || "APK".equalsIgnoreCase(applicationType)
+                    || "IPA".equalsIgnoreCase(applicationType)) {
                 actual = webdriverService.getValueFromHTML(tCExecution.getSession(), identifier);
 
             } else if ("WS".equalsIgnoreCase(applicationType)) {
@@ -974,7 +984,8 @@ public class ControlService implements IControlService {
         if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")
                 || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
                 || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
-            recorderService.recordScreenshot(tCExecution, testCaseStepActionExecution, testCaseStepActionControlExecution.getControlSequence());
+            TestCaseExecutionFile file = recorderService.recordScreenshot(tCExecution, testCaseStepActionExecution, testCaseStepActionControlExecution.getControlSequence());
+            testCaseStepActionControlExecution.addFileList(file);
             message = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_TAKESCREENSHOT);
             return message;
         }
@@ -989,7 +1000,12 @@ public class ControlService implements IControlService {
         if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")
                 || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
                 || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
-            recorderService.recordPageSource(tCExecution, testCaseStepActionExecution, testCaseStepActionControlExecution.getControlSequence());
+            TestCaseExecutionFile file = recorderService.recordPageSource(tCExecution, testCaseStepActionExecution, testCaseStepActionControlExecution.getControlSequence());
+            if (file != null) {
+                List<TestCaseExecutionFile> fileList = new ArrayList<TestCaseExecutionFile>();
+                fileList.add(file);
+                testCaseStepActionControlExecution.setFileList(fileList);
+            }
             message = new MessageEvent(MessageEventEnum.CONTROL_SUCCESS_GETPAGESOURCE);
             return message;
         }

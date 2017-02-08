@@ -21,10 +21,9 @@
 <%@page import="org.cerberus.util.StringUtil"%>
 <%@page import="org.apache.commons.lang3.StringUtils"%>
 <%@page import="java.lang.*" %>
-<%@page import="org.cerberus.crud.service.IDocumentationService"%>
-<%@page import="org.cerberus.crud.entity.BuildRevisionInvariant"%>
 <%@page import="org.cerberus.crud.service.impl.BuildRevisionInvariantService"%>
-<%@page import="org.cerberus.crud.service.IBuildRevisionInvariantService"%>
+<%@ page import="org.cerberus.crud.entity.*" %>
+<%@ page import="org.cerberus.crud.service.*" %>
 <% Date DatePageStart = new Date();%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
@@ -616,7 +615,7 @@
                             %>
                             <tr>
                                 <td class="INF" style="width: 30px"><%=rs_time.getString("tc.test")%></td>
-                                <td class="INF" style="width: 30px"><a href="TestCase.jsp?Load=Load&Test=<%=rs_time.getString("tc.test")%>&TestCase=<%=rs_time.getString("tc.testcase")%>"> <%=rs_time.getString("tc.testcase")%></a></td>
+                                <td class="INF" style="width: 30px"><a href="TestCaseScript.jsp?test=<%=rs_time.getString("tc.test")%>&testcase=<%=rs_time.getString("tc.testcase")%>"> <%=rs_time.getString("tc.testcase")%></a></td>
                                 <td class="INF" style="width: 30px"><%=rs_time.getString("tc.application")%></td>
                                 <td class="INF" style="width: 30px"><%=rs_time.getString("tc.description")%></td>
                                 <td class="INF" style="width: 30px"><%=rs_time.getString("tc.Priority")%></td>
@@ -745,8 +744,23 @@
                                                     //  else {average = "toto";}
 
                                 %> 
-                                <td class="INF"> 
-                                    <a href="ExecutionDetail2.jsp?executionId=<%=ID%>" title="Last Execution.">
+                                <td class="INF">
+                                    <%
+                                    String redirecturl = "";
+                                    IParameterService parameterService = appContext.getBean(IParameterService.class);
+                                    AnswerItem a = parameterService.readByKey("","cerberus_executiondetail_use");
+                                    if(a.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && a.getItem() != null) {
+                                    Parameter p = (Parameter)a.getItem();
+                                    if(!p.getValue().equals("N")) {
+                                    redirecturl = "ExecutionDetail2.jsp?executionId=";
+                                    }else{
+                                    redirecturl = "ExecutionDetail.jsp?id_tc=";
+                                    }
+                                    }else{
+                                    redirecturl = "ExecutionDetail.jsp?id_tc=";
+                                    }
+                                    %>
+                                    <a href="<%=redirecturl%><%=ID%>" title="Last Execution.">
                                         <img src="images/<%=cssTIME%>.png" border="0"/></a>
                                 </td>
                                 <td class="INF" style="font-size : x-small"><%

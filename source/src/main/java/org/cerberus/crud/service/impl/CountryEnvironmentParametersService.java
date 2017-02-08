@@ -32,6 +32,8 @@ import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
+import org.cerberus.util.observe.ObservableEngine;
+import org.cerberus.util.observe.Observer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.cerberus.crud.service.ICountryEnvironmentParametersService;
@@ -43,16 +45,35 @@ import org.cerberus.util.answer.AnswerUtil;
 @Service
 public class CountryEnvironmentParametersService implements ICountryEnvironmentParametersService {
 
-    @Autowired
-    ICountryEnvironmentParametersDAO countryEnvironmentParametersDao;
-
-    private final String OBJECT_NAME = "CountryEnvironmentParameters";
-
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CountryEnvironmentParametersService.class);
 
+    @Autowired
+    private ICountryEnvironmentParametersDAO countryEnvironmentParametersDao;
+
+    @Autowired
+    private ObservableEngine<CountryEnvironmentParameters.Key, CountryEnvironmentParameters> observableEngine;
+
     @Override
-    public AnswerItem readByKey(String system, String country, String environment, String application) {
+    public AnswerItem<CountryEnvironmentParameters> readByKey(String system, String country, String environment, String application) {
         return countryEnvironmentParametersDao.readByKey(system, country, environment, application);
+    }
+
+    @Override
+    public AnswerItem<Integer> readPoolSizeByKey(String system, String country, String environment, String application) {
+        AnswerItem<Integer> poolSize = new AnswerItem<>();
+
+        AnswerItem<CountryEnvironmentParameters> countryEnvironmentParameters = readByKey(system, country, environment, application);
+        if (!MessageEventEnum.DATA_OPERATION_OK.equals(countryEnvironmentParameters.getResultMessage().getSource())) {
+            poolSize.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
+            return poolSize;
+        }
+        poolSize.setItem(countryEnvironmentParameters.getItem().getPoolSize());
+        poolSize.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
+        return poolSize;
+    }
+
+    public AnswerItem readByKey(CountryEnvironmentParameters.Key key) {
+        return readByKey(key.getSystem(), key.getCountry(), key.getEnvironment(), key.getApplication());
     }
 
     @Override
@@ -72,17 +93,29 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
 
     @Override
     public Answer update(CountryEnvironmentParameters object) {
-        return countryEnvironmentParametersDao.update(object);
+        Answer answer = countryEnvironmentParametersDao.update(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireUpdate(CountryEnvironmentParameters.Key.fromCountryEnvironmentParameters(object), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer delete(CountryEnvironmentParameters object) {
-        return countryEnvironmentParametersDao.delete(object);
+        Answer answer = countryEnvironmentParametersDao.delete(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireDelete(CountryEnvironmentParameters.Key.fromCountryEnvironmentParameters(object), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer create(CountryEnvironmentParameters object) {
-        return countryEnvironmentParametersDao.create(object);
+        Answer answer = countryEnvironmentParametersDao.create(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireCreate(CountryEnvironmentParameters.Key.fromCountryEnvironmentParameters(object), object);
+        }
+        return answer;
     }
 
     @Override
@@ -242,4 +275,43 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
         throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
     }
 
+    @Override
+    public int defaultPoolSize() {
+        return countryEnvironmentParametersDao.getDefaultPoolSize();
+    }
+
+    @Override
+    public boolean register(Observer<CountryEnvironmentParameters.Key, CountryEnvironmentParameters> observer) {
+        return observableEngine.register(observer);
+    }
+
+    @Override
+    public boolean register(CountryEnvironmentParameters.Key key, Observer<CountryEnvironmentParameters.Key, CountryEnvironmentParameters> observer) {
+        return observableEngine.register(key, observer);
+    }
+
+    @Override
+    public boolean unregister(CountryEnvironmentParameters.Key key, Observer<CountryEnvironmentParameters.Key, CountryEnvironmentParameters> observer) {
+        return observableEngine.unregister(key, observer);
+    }
+
+    @Override
+    public boolean unregister(Observer<CountryEnvironmentParameters.Key, CountryEnvironmentParameters> observer) {
+        return observableEngine.unregister(observer);
+    }
+
+    @Override
+    public void fireCreate(CountryEnvironmentParameters.Key key, CountryEnvironmentParameters countryEnvironmentParameters) {
+        observableEngine.fireCreate(key, countryEnvironmentParameters);
+    }
+
+    @Override
+    public void fireUpdate(CountryEnvironmentParameters.Key key, CountryEnvironmentParameters countryEnvironmentParameters) {
+        observableEngine.fireUpdate(key, countryEnvironmentParameters);
+    }
+
+    @Override
+    public void fireDelete(CountryEnvironmentParameters.Key key, CountryEnvironmentParameters countryEnvironmentParameters) {
+        observableEngine.fireDelete(key, countryEnvironmentParameters);
+    }
 }

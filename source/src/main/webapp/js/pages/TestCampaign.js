@@ -100,12 +100,11 @@ function renderOptionsForCampaign(data) {
 function renderOptionsForCampaign2(id) {
     var doc = new Doc();
     var data = getSelectTestBattery(false, true);
-    console.log(data.find("option"));
     $("#" + id + "_wrapper #addBatteryTestcampaign").remove();
     var contentToAdd =
         "<div class='marginBottom10 form-inline' id='addBatteryTestcampaign'>" +
-        "<div class='form-group marginRight10'>" +
-        "<select id='batteryTestSelect' class='form-control' style='width:200px;'>";
+        "<div class='form-group marginRight10 col-sm-6' style='padding-right: 0px; padding-left: 0px;'>" +
+        "<select id='batteryTestSelect' class='form-control' style='width:100%;'>";
     for (var i = 0; i < data.find("option").length; i++) {
         if (!findValueTableDataByCol(id, 0, data.find("option")[i].value)) {
             contentToAdd +=
@@ -134,8 +133,8 @@ function renderOptionsForCampaign3(id) {
     $("#" + id + "_wrapper #addParameterTestcampaign").remove();
     var contentToAdd =
         "<div class='marginBottom10 form-inline' id='addParameterTestcampaign'>" +
-        "<div class='form-group marginRight10'>" +
-        "<select id='parameterTestSelect' class='form-control' style='width:200px;' onchange='updateSelectParameter(\"" + id + "\")'>";
+        "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+        "<select id='parameterTestSelect' class='form-control' style='width:100%;' onchange='updateSelectParameter(\"" + id + "\")'>";
     for (var i = 0; i < data.find("option").length; i++) {
         contentToAdd +=
             "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
@@ -143,8 +142,8 @@ function renderOptionsForCampaign3(id) {
     contentToAdd +=
         "</select>" +
         "</div>" +
-        "<div class='form-group marginRight10'>" +
-        "<select id='parameterTestSelect2' class='form-control' style='width:200px;'>" +
+        "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+        "<select id='parameterTestSelect2' class='form-control' style='width:100%;'>" +
         "</select>" +
         "</div>" +
         "<div class='form-group'>" +
@@ -228,9 +227,7 @@ function editEntryClick(param) {
 
         $.each(obj.battery, function (e) {
             array.push(
-                $.map(obj.battery[e], function (value, index) {
-                    return [value];
-                })
+                [obj.battery[e].testbattery,obj.battery[e].campaign,obj.battery[e].campaigncontentID]
             );
         });
 
@@ -249,11 +246,7 @@ function editEntryClick(param) {
         var array = [];
 
         $.each(obj.parameter, function (e) {
-            array.push(
-                $.map(obj.parameter[e], function (value, index) {
-                    return [value];
-                })
-            );
+            array.push([obj.parameter[e].campaignparameterID,obj.parameter[e].parameter,obj.parameter[e].campaign,obj.parameter[e].value])
         });
 
         if ($("#editTestcampaignModal #parameterTestcampaignsTable_wrapper").length > 0) {
@@ -489,7 +482,6 @@ function getSys() {
 function updateSelectParameter(id) {
     var val = $("#" + id + '_wrapper #parameterTestSelect').find(":selected").val();
     var data = getSelectInvariant(val, false, true);
-    console.log(data);
     $("#" + id + "_wrapper #parameterTestSelect2").empty();
     var optionList = "";
     for (var i = 0; i < data.find("option").length; i++) {
@@ -623,7 +615,7 @@ function aoColumnsFunc4() {
         {
             "data": "testCase", "sName": "tbc.Testcase", "title": doc.getDocLabel("page_testcampaign", "testcase_col"),
             "mRender": function (data, type, obj) {
-                return "<a target=\"_blank\" href='TestCase.jsp?Test=" + obj["test"] + "&TestCase=" + obj["testCase"] + "'>" + obj["testCase"] + "</a>";
+                return "<a target=\"_blank\" href='TestCaseScript.jsp?test=" + obj["test"] + "&testcase=" + obj["testCase"] + "'>" + obj["testCase"] + "</a>";
             }
         }
     ];

@@ -36,10 +36,14 @@ public class TestCaseStepActionExecution {
     private String test;
     private String testCase;
     private int step;
+    private int index;
     private int sequence;
     private int sort;
     private String conditionOper;
+    private String conditionVal1Init;
+    private String conditionVal2Init;
     private String conditionVal1;
+    private String conditionVal2;
     private String action;
     private String value1Init;
     private String value2Init;
@@ -63,8 +67,29 @@ public class TestCaseStepActionExecution {
     private MessageGeneral executionResultMessage;
     private String propertyName; // Property name is stored in order to keep track of the property name. property is replaced by the value of it.
     private boolean stopExecution;
+    private List<TestCaseExecutionFile> fileList; // Host the list of the files stored at step level
     private List<TestCaseExecutionData> testCaseExecutionDataList; // Host the full list of data that was previously calculated and that will be used to calculate during the calculation of any property during the action.
-    private AnswerList testCaseStepActionControlExecutionList;
+    private List<TestCaseStepActionControlExecution> testCaseStepActionControlExecutionList; // Host the full list of data that was previously calculated and that will be used to calculate during the calculation of any property during the action.
+
+    public List<TestCaseExecutionFile> getFileList() {
+        return fileList;
+    }
+
+    public void setFileList(List<TestCaseExecutionFile> fileList) {
+        this.fileList = fileList;
+    }
+
+    public void addFileList(TestCaseExecutionFile file) {
+        this.fileList.add(file);
+    }
+
+    public void addFileList(List<TestCaseExecutionFile> fileList) {
+        if (fileList != null) {
+            for (TestCaseExecutionFile testCaseExecutionFile : fileList) {
+                this.fileList.add(testCaseExecutionFile);
+            }
+        }
+    }
 
     public String getConditionOper() {
         return conditionOper;
@@ -74,12 +99,36 @@ public class TestCaseStepActionExecution {
         this.conditionOper = conditionOper;
     }
 
+    public String getConditionVal1Init() {
+        return conditionVal1Init;
+    }
+
+    public void setConditionVal1Init(String conditionVal1Init) {
+        this.conditionVal1Init = conditionVal1Init;
+    }
+
+    public String getConditionVal2Init() {
+        return conditionVal2Init;
+    }
+
+    public void setConditionVal2Init(String conditionVal2Init) {
+        this.conditionVal2Init = conditionVal2Init;
+    }
+
     public String getConditionVal1() {
         return conditionVal1;
     }
 
     public void setConditionVal1(String conditionVal1) {
         this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
     }
 
     public String getValue1Init() {
@@ -270,6 +319,14 @@ public class TestCaseStepActionExecution {
         this.step = step;
     }
 
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
     public String getTest() {
         return test;
     }
@@ -286,12 +343,26 @@ public class TestCaseStepActionExecution {
         this.testCase = testCase;
     }
 
-    public void setTestCaseStepActionControlExecutionList(AnswerList testCaseStepActionControlExecutionList) {
+    public List<TestCaseStepActionControlExecution> getTestCaseStepActionControlExecutionList() {
+        return testCaseStepActionControlExecutionList;
+    }
+
+    public void setTestCaseStepActionControlExecutionList(List<TestCaseStepActionControlExecution> testCaseStepActionControlExecutionList) {
         this.testCaseStepActionControlExecutionList = testCaseStepActionControlExecutionList;
     }
 
-    public AnswerList getTestCaseStepActionControlExecutionList() {
-        return testCaseStepActionControlExecutionList;
+    public void addTestCaseStepActionExecutionList(TestCaseStepActionControlExecution testCaseStepActionControlExecution) {
+        if (testCaseStepActionControlExecution != null) {
+            this.testCaseStepActionControlExecutionList.add(testCaseStepActionControlExecution);
+        }
+    }
+
+    public void addTestCaseStepActionExecutionList(List<TestCaseStepActionControlExecution> testCaseStepActionControlExecutionList) {
+        if (testCaseStepActionControlExecutionList != null) {
+            for (TestCaseStepActionControlExecution testCaseStepActionControlExecution : testCaseStepActionControlExecutionList) {
+                this.testCaseStepActionControlExecutionList.add(testCaseStepActionControlExecution);
+            }
+        }
     }
 
     public String getDescription() {
@@ -309,11 +380,19 @@ public class TestCaseStepActionExecution {
             result.put("test", this.getTest());
             result.put("testcase", this.getTestCase());
             result.put("step", this.getStep());
+            result.put("index", this.getIndex());
             result.put("sequence", this.getSequence());
             result.put("sort", this.getSort());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionVal1Init", this.getConditionVal1Init());
+            result.put("conditionVal2Init", this.getConditionVal2Init());
+            result.put("conditionVal1", this.getConditionVal1());
+            result.put("conditionVal2", this.getConditionVal2());
             result.put("action", this.getAction());
             result.put("value1", this.getValue1());
             result.put("value2", this.getValue2());
+            result.put("value1init", this.getValue1Init());
+            result.put("value2init", this.getValue2Init());
             result.put("forceExeStatus", this.getForceExeStatus());
             result.put("start", this.getStart());
             result.put("end", this.getEnd());
@@ -322,13 +401,23 @@ public class TestCaseStepActionExecution {
             result.put("description", this.getDescription());
             result.put("returnCode", this.getReturnCode());
             result.put("returnMessage", this.getReturnMessage());
+
             JSONArray array = new JSONArray();
-            if(this.getTestCaseStepActionControlExecutionList() != null && this.getTestCaseStepActionControlExecutionList().getDataList() != null) {
-                for (Object testCaseStepActionControlExecution : this.getTestCaseStepActionControlExecutionList().getDataList()) {
+            if (this.getTestCaseStepActionControlExecutionList() != null) {
+                for (Object testCaseStepActionControlExecution : this.getTestCaseStepActionControlExecutionList()) {
                     array.put(((TestCaseStepActionControlExecution) testCaseStepActionControlExecution).toJson());
                 }
             }
             result.put("testCaseStepActionControlExecutionList", array);
+
+            array = new JSONArray();
+            if (this.getFileList() != null) {
+                for (Object actionFileList : this.getFileList()) {
+                    array.put(((TestCaseExecutionFile) actionFileList).toJson());
+                }
+            }
+            result.put("fileList", array);
+
         } catch (JSONException ex) {
             Logger.getLogger(TestCaseStepActionExecution.class.getName()).log(Level.SEVERE, null, ex);
         }

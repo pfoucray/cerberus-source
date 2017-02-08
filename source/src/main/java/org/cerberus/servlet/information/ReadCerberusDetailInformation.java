@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.cerberus.database.dao.ICerberusInformationDAO;
-import org.cerberus.engine.entity.ExecutionThreadPool;
 import org.cerberus.engine.entity.ExecutionUUID;
 import org.cerberus.crud.entity.SessionCounter;
 import org.cerberus.crud.entity.TestCaseExecution;
@@ -68,14 +67,14 @@ public class ReadCerberusDetailInformation extends HttpServlet {
             throws ServletException, IOException {
         JSONObject jsonResponse = new JSONObject();
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
-        ExecutionThreadPool etp = appContext.getBean(ExecutionThreadPool.class);
+        //ExecutionThreadPool etp = appContext.getBean(ExecutionThreadPool.class);
         ExecutionUUID euuid = appContext.getBean(ExecutionUUID.class);
         SessionCounter sc = appContext.getBean(SessionCounter.class);
         Infos infos = new Infos();
 
         try {
-            jsonResponse.put("size_queue", etp.getPoolSize());
-            jsonResponse.put("queue_in_execution", etp.getInQueue());
+            //jsonResponse.put("size_queue", etp.getPoolSize());
+            //jsonResponse.put("queue_in_execution", etp.getInQueue());
             jsonResponse.put("simultaneous_execution", euuid.size());
             JSONArray executionArray = new JSONArray();
             for (Object ex : euuid.getExecutionUUIDList().values()) {
@@ -96,7 +95,7 @@ public class ReadCerberusDetailInformation extends HttpServlet {
             jsonResponse.put("simultaneous_execution_list", executionArray);
             jsonResponse.put("simultaneous_session", sc.getTotalActiveSession());
             jsonResponse.put("active_users", sc.getActiveUsers());
-            jsonResponse.put("number_of_thread", etp.getInExecution());
+            //jsonResponse.put("number_of_thread", etp.getInExecution());
 
             cerberusDatabaseInformation = appContext.getBean(ICerberusInformationDAO.class);
 

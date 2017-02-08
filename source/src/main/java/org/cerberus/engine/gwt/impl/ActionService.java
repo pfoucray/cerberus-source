@@ -26,14 +26,13 @@ import org.apache.log4j.Logger;
 import org.cerberus.engine.entity.Identifier;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.crud.entity.SoapLibrary;
+import org.cerberus.crud.entity.AppService;
 import org.cerberus.engine.entity.SwipeAction;
 import org.cerberus.crud.entity.TestCaseExecution;
 import org.cerberus.crud.entity.TestCaseExecutionData;
 import org.cerberus.crud.entity.TestCaseStepAction;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
 import org.cerberus.crud.service.ILogEventService;
-import org.cerberus.crud.service.ISoapLibraryService;
 import org.cerberus.engine.entity.SOAPExecution;
 import org.cerberus.engine.gwt.IVariableService;
 import org.cerberus.enums.MessageEventEnum;
@@ -56,7 +55,7 @@ import org.cerberus.util.answer.AnswerItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
+import org.cerberus.crud.service.IAppServiceService;
 
 /**
  *
@@ -72,7 +71,7 @@ public class ActionService implements IActionService {
     @Autowired
     private ISoapService soapService;
     @Autowired
-    private ISoapLibraryService soapLibraryService;
+    private IAppServiceService appServiceService;
     @Autowired
     private IRecorderService recorderService;
     @Autowired
@@ -100,6 +99,7 @@ public class ActionService implements IActionService {
     @Override
     public TestCaseStepActionExecution doAction(TestCaseStepActionExecution testCaseStepActionExecution) {
         MessageEvent res;
+        TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
 
         /**
          * Decode the object field before doing the action.
@@ -112,7 +112,8 @@ public class ActionService implements IActionService {
                 }
                 try {
                     // We decode here the object with any potencial variables (ex : %TOTO%). If the Current action if calculateProperty, we force a new calculation of the Property.
-                    testCaseStepActionExecution.setValue1(propertyService.decodeValueWithExistingProperties(testCaseStepActionExecution.getValue1(), testCaseStepActionExecution, isCalledFromCalculateProperty));
+                    testCaseStepActionExecution.setValue1(variableService.decodeStringCompletly(testCaseStepActionExecution.getValue1(),
+                            tCExecution, testCaseStepActionExecution, isCalledFromCalculateProperty));
                     //if the getvalue() indicates that the execution should stop then we stop it before the doAction 
                     //or if the property service was unable to decode the property that is specified in the object, 
                     //then the execution of this action should not performed
@@ -130,14 +131,16 @@ public class ActionService implements IActionService {
         }
 
         try {
-            testCaseStepActionExecution.setValue1(variableService.decodeVariableWithExistingObject(testCaseStepActionExecution.getValue1(), testCaseStepActionExecution, false));
+            testCaseStepActionExecution.setValue1(variableService.decodeStringCompletly(testCaseStepActionExecution.getValue1(),
+                    tCExecution, testCaseStepActionExecution, false));
         } catch (CerberusEventException cex) {
             testCaseStepActionExecution.setActionResultMessage(cex.getMessageError());
             testCaseStepActionExecution.setExecutionResultMessage(new MessageGeneral(cex.getMessageError().getMessage()));
             return testCaseStepActionExecution;
         }
         try {
-            testCaseStepActionExecution.setValue2(variableService.decodeVariableWithExistingObject(testCaseStepActionExecution.getValue2(), testCaseStepActionExecution, false));
+            testCaseStepActionExecution.setValue2(variableService.decodeStringCompletly(testCaseStepActionExecution.getValue2(),
+                    tCExecution, testCaseStepActionExecution, false));
         } catch (CerberusEventException cex) {
             testCaseStepActionExecution.setActionResultMessage(cex.getMessageError());
             testCaseStepActionExecution.setExecutionResultMessage(new MessageGeneral(cex.getMessageError().getMessage()));
@@ -155,7 +158,6 @@ public class ActionService implements IActionService {
         String propertyName = testCaseStepActionExecution.getPropertyName();
         MyLogger.log(RunTestCaseService.class.getName(), Level.DEBUG, "Doing Action : " + testCaseStepActionExecution.getAction() + " with object : " + value1 + " and property : " + value2);
 
-        TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
         //TODO On JDK 7 implement switch with string [Edit @abourdon: prefer use of chain of responsibility pattern instead of a big switch]
         if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_KEYPRESS)) {
             res = this.doActionKeyPress(tCExecution, value1, value2);
@@ -218,11 +220,8 @@ public class ActionService implements IActionService {
         } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_WAIT)) {
             res = this.doActionWait(tCExecution, value1, value2);
 
-        } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_CALLSOAP)) {
-            res = this.doActionMakeSoapCall(testCaseStepActionExecution, value1, value2, false);
-
-        } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_CALLSOAPWITHBASE)) {
-            res = this.doActionMakeSoapCall(testCaseStepActionExecution, value1, value2, true);
+        } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_CALLSERVICE)) {
+            res = this.doActionCallService(testCaseStepActionExecution, value1);
 
         } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_REMOVEDIFFERENCE)) {
             res = this.doActionRemoveDifference(testCaseStepActionExecution, value1, value2);
@@ -238,9 +237,6 @@ public class ActionService implements IActionService {
 
         } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_DONOTHING)) {
             res = new MessageEvent(MessageEventEnum.ACTION_SUCCESS);
-
-        } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_SKIPACTION)) {
-            res = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_SKIPACTION);
 
         } else if (testCaseStepActionExecution.getAction().equals(TestCaseStepAction.ACTION_GETPAGESOURCE)) {
             res = this.doActionGetPageSource(testCaseStepActionExecution);
@@ -336,6 +332,8 @@ public class ActionService implements IActionService {
                 return androidAppiumService.click(tCExecution.getSession(), identifier);
             } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
                 return iosAppiumService.click(tCExecution.getSession(), identifier);
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), TestCaseStepAction.ACTION_CLICK, identifier.getLocator(), "");
             } else {
                 return new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION)
                         .resolveDescription("ACTION", "Click")
@@ -396,6 +394,8 @@ public class ActionService implements IActionService {
                 } else {
                     return webdriverService.doSeleniumActionRightClick(tCExecution.getSession(), identifier);
                 }
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "rightClick", identifier.getLocator(), "");
             }
             message = new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION);
             message.setDescription(message.getDescription().replace("%ACTION%", "rightClick"));
@@ -455,6 +455,8 @@ public class ActionService implements IActionService {
                 return androidAppiumService.switchToContext(tCExecution.getSession(), identifier);
             } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
                 return iosAppiumService.switchToContext(tCExecution.getSession(), identifier);
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "switchApp", null, identifier.getLocator());
             } else {
                 return new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION)
                         .resolveDescription("ACTION", "SwitchToWindow")
@@ -542,6 +544,8 @@ public class ActionService implements IActionService {
             } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
                     || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
                 return webdriverService.doSeleniumActionDoubleClick(tCExecution.getSession(), identifier, true, false);
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "doubleClick", identifier.getLocator(), "");
             }
 
             message = new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION);
@@ -578,6 +582,8 @@ public class ActionService implements IActionService {
                 return androidAppiumService.type(tCExecution.getSession(), identifier, property, propertyName);
             } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
                 return iosAppiumService.type(tCExecution.getSession(), identifier, property, propertyName);
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "type", identifier.getLocator(), property);
             } else {
                 return new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION)
                         .resolveDescription("ACTION", "Type")
@@ -610,6 +616,8 @@ public class ActionService implements IActionService {
                 } else {
                     return webdriverService.doSeleniumActionMouseOver(tCExecution.getSession(), identifier);
                 }
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "mouseOver", identifier.getLocator(), "");
             }
             message = new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION);
             message.setDescription(message.getDescription().replace("%ACTION%", "mouseOver"));
@@ -671,7 +679,8 @@ public class ActionService implements IActionService {
 
             if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")
                     || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
-                    || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) { // If application are Selenium or appium based, we have a session and can use it to wait.
+                    || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")
+                    || tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) { // If application are Selenium or appium based, we have a session and can use it to wait.
 
                 /**
                  * if element is integer, set time to that value else Get
@@ -679,7 +688,7 @@ public class ActionService implements IActionService {
                  */
                 if (StringUtil.isNullOrEmpty(element)) {
                     timeToWaitInMs = tCExecution.getCerberus_action_wait_default();
-                } else if (StringUtil.isNumeric(element)) {
+                } else if (StringUtil.isInteger(element)) {
                     timeToWaitInMs = Long.valueOf(element);
                 } else {
                     identifier = identifierService.convertStringToIdentifier(element);
@@ -697,7 +706,7 @@ public class ActionService implements IActionService {
                 if (StringUtil.isNullOrEmpty(element)) {
                     // Get default wait from parameter
                     timeToWaitInMs = tCExecution.getCerberus_action_wait_default();
-                } else if (StringUtil.isNumeric(element)) {
+                } else if (StringUtil.isInteger(element)) {
                     timeToWaitInMs = Long.valueOf(element);
                 }
                 return this.waitTime(timeToWaitInMs);
@@ -733,6 +742,8 @@ public class ActionService implements IActionService {
                 return androidAppiumService.keyPress(tCExecution.getSession(), object);
             } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
                 return iosAppiumService.keyPress(tCExecution.getSession(), object);
+            } else if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+                return sikuliService.doSikuliAction(tCExecution.getSession(), "keyPress", identifier.getLocator(), property);
             } else {
                 return new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION)
                         .resolveDescription("ACTION", "KeyPress")
@@ -858,90 +869,151 @@ public class ActionService implements IActionService {
 
     }
 
-    private MessageEvent doActionMakeSoapCall(TestCaseStepActionExecution testCaseStepActionExecution, String object, String property, boolean withBase) {
-        MessageEvent message;
+    private MessageEvent doActionCallService(TestCaseStepActionExecution testCaseStepActionExecution, String value1) {
+        MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
         TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
         String decodedEnveloppe;
         String decodedServicePath = null;
-        String decodedMethod;
+        String decodedOperation;
         AnswerItem lastSoapCalled;
-        //if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("WS")) {
+
         try {
-            SoapLibrary soapLibrary = soapLibraryService.findSoapLibraryByKey(object);
+            AppService appService = appServiceService.convert(appServiceService.readByKey(value1));
             String servicePath;
-            if (withBase) {
-                servicePath = tCExecution.getCountryEnvironmentParameters().getIp() + tCExecution.getCountryEnvironmentParameters().getUrl() + soapLibrary.getServicePath();
+
+            if (appService == null) {
+
+                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+                message.setDescription(message.getDescription().replace("%SERVICE%", value1));
+                message.setDescription(message.getDescription().replace("%DESCRIPTION%", "Service does not exist !!"));
+
             } else {
-                servicePath = soapLibrary.getServicePath();
-            }
-            if (!(StringUtil.isURL(servicePath))) {
-                servicePath = "http://" + servicePath;
-            }
-            /**
-             * Decode Envelope, ServicePath and Method replacing properties
-             * encapsulated with %
-             */
-            decodedEnveloppe = soapLibrary.getEnvelope();
-            decodedServicePath = servicePath;
-            decodedMethod = soapLibrary.getMethod();
 
-            try {
-                if (soapLibrary.getEnvelope().contains("%")) {
-                    decodedEnveloppe = propertyService.decodeValueWithExistingProperties(decodedEnveloppe, testCaseStepActionExecution, false);
+                // We start by calculating the servicePath and decode it.
+                servicePath = appService.getServicePath();
+                if (!(StringUtil.isURL(servicePath))) {
+                    // If appService value does not look like an URL, it means it is relative and we add the application host and context root.
+                    servicePath = StringUtil.getURLFromString(tCExecution.getCountryEnvironmentParameters().getIp(),
+                            tCExecution.getCountryEnvironmentParameters().getUrl(), appService.getServicePath(), "http://");
                 }
-                if (soapLibrary.getServicePath().contains("%")) {
-                    decodedServicePath = propertyService.decodeValueWithExistingProperties(decodedServicePath, testCaseStepActionExecution, false);
-                }
-                if (soapLibrary.getMethod().contains("%")) {
-                    decodedMethod = propertyService.decodeValueWithExistingProperties(decodedMethod, testCaseStepActionExecution, false);
+                decodedServicePath = servicePath;
+                try {
+                    if (appService.getServicePath().contains("%")) {
+                        decodedServicePath = variableService.decodeStringCompletly(decodedServicePath, tCExecution, testCaseStepActionExecution, false);
+                    }
+                    //if the process of decoding originates a message that isStopExecution then we will stop the current action execution
+                    if (testCaseStepActionExecution.isStopExecution()) {
+                        return testCaseStepActionExecution.getActionResultMessage();
+                    }
+                } catch (CerberusEventException cee) {
+                    message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICEWITHPATH);
+                    message.setDescription(message.getDescription().replace("%SERVICE%", value1));
+                    message.setDescription(message.getDescription().replace("%SERVICEPATH%", decodedServicePath));
+                    message.setDescription(message.getDescription().replace("%DESCRIPTION%", cee.getMessageError().getDescription()));
+                    return message;
                 }
 
-                //if the process of decoding originates a message that isStopExecution then we will stop the current action execution
-                if (testCaseStepActionExecution.isStopExecution()) {
-                    return testCaseStepActionExecution.getActionResultMessage();
+                // The rest of the data will be prepared depending on the TYPE and METHOD used.
+                switch (appService.getType()) {
+                    case AppService.TYPE_SOAP:
+
+                        /**
+                         * SOAP. Decode Envelope and Operation replacing
+                         * properties encapsulated with %
+                         */
+                        decodedEnveloppe = appService.getServiceRequest();
+                        decodedOperation = appService.getOperation();
+                        try {
+                            if (appService.getServiceRequest().contains("%")) {
+                                decodedEnveloppe = variableService.decodeStringCompletly(decodedEnveloppe, tCExecution, testCaseStepActionExecution, false);
+                            }
+                            if (appService.getOperation().contains("%")) {
+                                decodedOperation = variableService.decodeStringCompletly(decodedOperation, tCExecution, testCaseStepActionExecution, false);
+                            }
+
+                            //if the process of decoding originates a message that isStopExecution then we will stop the current action execution
+                            if (testCaseStepActionExecution.isStopExecution()) {
+                                return testCaseStepActionExecution.getActionResultMessage();
+                            }
+                        } catch (CerberusEventException cee) {
+                            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
+                            message.setDescription(message.getDescription().replace("%SOAPNAME%", value1));
+                            message.setDescription(message.getDescription().replace("%SERVICEPATH%", decodedServicePath));
+                            message.setDescription(message.getDescription().replace("%DESCRIPTION%", cee.getMessageError().getDescription()));
+                            return message;
+                        }
+
+                        /**
+                         * Add attachment.
+                         */
+                        String attachement = "";
+                        //TODO: the picture url should be used instead of the property value
+                        //the database does not include the attachmentURL field 
+                        /*if (!property.isEmpty()) {
+                        attachement = property; 
+                    } else {
+                        attachement = soapLibrary.getAttachmentUrl();
+                    }*/
+
+                        /**
+                         * Call SOAP and store it into the execution.
+                         */
+                        lastSoapCalled = soapService.callSOAP(decodedEnveloppe, decodedServicePath, decodedOperation, attachement);
+                        tCExecution.setLastSOAPCalled(lastSoapCalled);
+
+                        /**
+                         * Record the Request and Response in filesystem.
+                         */
+                        SOAPExecution se = (SOAPExecution) lastSoapCalled.getItem();
+                        recorderService.recordSOAPCall(tCExecution, testCaseStepActionExecution, 0, se);
+                        message = lastSoapCalled.getResultMessage();
+
+                        break;
+
+                    case AppService.TYPE_REST:
+
+                        /**
+                         * REST.
+                         */
+                        switch (appService.getMethod()) {
+                            case AppService.METHOD_HTTPGET:
+                                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+                                message.setDescription(message.getDescription().replace("%SERVICE%", value1));
+                                message.setDescription(message.getDescription().replace("%DESCRIPTION%", "REST-GET not implemented yet"));
+                                break;
+                            case AppService.METHOD_HTTPPOST:
+                                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+                                message.setDescription(message.getDescription().replace("%SERVICE%", value1));
+                                message.setDescription(message.getDescription().replace("%DESCRIPTION%", "REST-POST not implemented yet"));
+                                break;
+                            default:
+                                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+                                message.setDescription(message.getDescription().replace("%SERVICE%", value1));
+                                message.setDescription(message.getDescription().replace("%DESCRIPTION%", "Method : '" + appService.getMethod() + "' for REST Service is not supported by the engine."));
+                        }
+
+                        break;
+
+                    default:
+                        message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+                        message.setDescription(message.getDescription().replace("%SERVICE%", value1));
+                        message.setDescription(message.getDescription().replace("%DESCRIPTION%", "Service Type : '" + appService.getType() + "' is not supported by the engine."));
                 }
-            } catch (CerberusEventException cee) {
-                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
-                message.setDescription(message.getDescription().replace("%SOAPNAME%", object));
-                message.setDescription(message.getDescription().replace("%SERVICEPATH%", decodedServicePath));
-                message.setDescription(message.getDescription().replace("%DESCRIPTION%", cee.getMessageError().getDescription()));
-                return message;
             }
-
-            /*
-             * Add attachment
-             */
-            String attachement = "";
-            //TODO: the picture url should be used instead of the property value
-            //the database does not include the attachmentURL field 
-            /*if (!property.isEmpty()) {
-             attachement = property; 
-             } else {
-             attachement = soapLibrary.getAttachmentUrl();
-             }*/
-            lastSoapCalled = soapService.callSOAP(decodedEnveloppe, decodedServicePath, decodedMethod, attachement);
-            tCExecution.setLastSOAPCalled(lastSoapCalled);
 
         } catch (CerberusException ex) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
-            message.setDescription(message.getDescription().replace("%SOAPNAME%", object));
-            message.setDescription(message.getDescription().replace("%SERVICEPATH%", decodedServicePath));
+            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+            message.setDescription(message.getDescription().replace("%SERVICE%", value1));
             message.setDescription(message.getDescription().replace("%DESCRIPTION%", ex.getMessageError().getDescription()));
             return message;
         } catch (Exception ex) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
-            message.setDescription(message.getDescription().replace("%SOAPNAME%", object));
-            message.setDescription(message.getDescription().replace("%SERVICEPATH%", decodedServicePath));
+            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE);
+            message.setDescription(message.getDescription().replace("%SERVICE%", value1));
             message.setDescription(message.getDescription().replace("%DESCRIPTION%", ex.toString()));
             return message;
         }
 
-        //Record the Request and Response in filesystem.
-        SOAPExecution se = (SOAPExecution) lastSoapCalled.getItem();
-        recorderService.recordSOAPCall(tCExecution, testCaseStepActionExecution, 0, se);
-
-        return lastSoapCalled.getResultMessage();
-        //}
+        return message;
     }
 
     private MessageEvent doActionTakeScreenshot(TestCaseStepActionExecution testCaseStepActionExecution) {
@@ -953,6 +1025,11 @@ public class ActionService implements IActionService {
                     testCaseStepActionExecution, 0);
             message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_TAKESCREENSHOT);
             return message;
+        } else if (testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution().getApplicationObj().getType().equalsIgnoreCase("FAT")) {
+            /**
+             * TODO Implement screenshot for FAT client application
+             */
+            message = new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION);
         }
         message = new MessageEvent(MessageEventEnum.ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION);
         message.setDescription(message.getDescription().replace("%ACTION%", "TakeScreenShot"));
@@ -1009,15 +1086,14 @@ public class ActionService implements IActionService {
             message.setDescription(message.getDescription().replace("%ACTION%", TestCaseStepAction.ACTION_CALCULATEPROPERTY));
         } else {
             try {
+                TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
                 String propertyValueResult = "";
                 // if value2 is not defined, then decode the property defined in value1.
                 if (StringUtil.isNullOrEmpty(value2)) {
-                    propertyValueResult = propertyService.decodeValueWithExistingProperties("%" + value1 + "%", testCaseStepActionExecution, true);
-                }
-                // If not, then set value1 property to the decoded value2 property
+                    propertyValueResult = variableService.decodeStringCompletly("%" + value1 + "%", tCExecution, testCaseStepActionExecution, true);
+                } // If not, then set value1 property to the decoded value2 property
                 else {
-                    propertyValueResult =  propertyService.decodeValueWithExistingProperties("%" + value2 + "%", testCaseStepActionExecution, true);
-                    TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
+                    propertyValueResult = variableService.decodeStringCompletly("%" + value2 + "%", tCExecution, testCaseStepActionExecution, true);
                     for (TestCaseExecutionData property : tCExecution.getTestCaseExecutionDataList()) {
                         if (value1.equals(property.getProperty())) {
                             property.setValue(propertyValueResult);
@@ -1035,8 +1111,6 @@ public class ActionService implements IActionService {
                 message = cex.getMessageError();
             }
         }
-
-//        }
         return message;
     }
 
@@ -1074,6 +1148,7 @@ public class ActionService implements IActionService {
         } catch (InterruptedException exception) {
             MyLogger.log(ActionService.class.getName(), Level.INFO, exception.toString());
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_WAIT);
+            message.setDescription(message.getDescription().replace("%TIME%", String.valueOf(timeToWaitMs)));
             return message;
         }
     }

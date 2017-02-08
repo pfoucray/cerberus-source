@@ -19,13 +19,9 @@
  */
 package org.cerberus.servlet.crud.countryenvironment;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
-import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.ApplicationObject;
 import org.cerberus.crud.service.IApplicationObjectService;
-import org.cerberus.crud.service.IApplicationService;
-import org.cerberus.crud.service.impl.ApplicationService;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
@@ -266,8 +262,8 @@ public class ReadApplicationObject extends HttpServlet {
 
         AnswerItem resp = applicationObjectService.readByKey(application, objecta);
 
-        JSONObject jsonObject = new JSONObject();
-        if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
+        JSONObject jsonObject = null;
+        if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem() != null) {//the service was able to perform the query, then we should get all values
             jsonObject = convertApplicationObjectToJSONObject((ApplicationObject)resp.getItem());
         }
 

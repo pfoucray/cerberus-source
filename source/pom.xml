@@ -4,7 +4,7 @@
 
     <groupId>org.cerberus</groupId>
     <artifactId>cerberus</artifactId>
-    <version>1.1.8-SNAPSHOT</version>
+    <version>1.1.11-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <name>Cerberus</name>
@@ -19,11 +19,11 @@
         <javax.persistence.version>2.0.5</javax.persistence.version>
         <org.eclipse.persistence.jpa.modelgen.processor.version>2.3.2</org.eclipse.persistence.jpa.modelgen.processor.version>
         <commons-email.version>1.2</commons-email.version>
-        <javaee-web-api>6.0</javaee-web-api>
+        <javaee-web-api>7.0</javaee-web-api>
         <junit.version>4.9</junit.version>
         <mysql-connector-java.version>5.1.20</mysql-connector-java.version>
         <json.version>20080701</json.version>
-        <selenium.version>2.53.0</selenium.version>
+        <selenium.version>2.53.1</selenium.version>
         <owasp-java-html-sanitizer.version>r223</owasp-java-html-sanitizer.version>
         <log4j.version>1.2.9</log4j.version>
         <jackson-core-asl.version>1.7.1</jackson-core-asl.version>
@@ -39,15 +39,16 @@
         <guava.version>17.0</guava.version>
         <xmlunit.version>1.5</xmlunit.version>
         <elfinder-servlet.version>1.2.0</elfinder-servlet.version>
-        <websocket.version>1.0</websocket.version>
+        <websocket.version>1.1</websocket.version>
         <gson.version>2.3.1</gson.version>
         <jsonxpath.version>1.2.0</jsonxpath.version>
         <poi.version>3.13</poi.version>
-        <appium.version>3.4.1</appium.version>
+        <appium.version>4.1.2</appium.version>
         <groovy.version>2.4.7</groovy.version>
         <groovy-sandbox.version>1.10</groovy-sandbox.version>
         <asciidoctor.version>1.5.4</asciidoctor.version>
         <apache.tika>1.13</apache.tika>
+        <fluent-hc.version>4.5.2</fluent-hc.version>
         
         <!-- Maven plugin version -->
         <maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
@@ -59,9 +60,10 @@
         <maven-deploy-plugin.version>2.5</maven-deploy-plugin.version>
         <maven-antrun-plugin.version>1.7</maven-antrun-plugin.version>
         <maven-assembly-plugin.version>2.4.1</maven-assembly-plugin.version>
-        <javaee-endorsed-api.version>6.0</javaee-endorsed-api.version>
+        <javaee-endorsed-api.version>7.0</javaee-endorsed-api.version>
         <jsch.version>0.1.42</jsch.version>
         <ant-jsch.version>1.8.2</ant-jsch.version>
+        <jackson.version>2.8.5</jackson.version>
 
         <!-- Additional properties -->
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
@@ -171,6 +173,11 @@
             <version>${jackson-core-asl.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>${jackson-mapper-asl.version}</version>
+        </dependency>
+        <dependency>
             <groupId>jfree</groupId>
             <artifactId>jfreechart</artifactId>
             <version>${jfreechart.version}</version>
@@ -189,11 +196,6 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${commons-io.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-            <version>${jackson-mapper-asl.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-net</groupId>
@@ -260,6 +262,16 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>${apache.tika}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <version>${fluent-hc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <!-- Provided scope -->
@@ -328,6 +340,11 @@
             <version>${elfinder-servlet.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/src/main/webapp/WEB-INF/lib/elfinder-servlet-${elfinder-servlet.version}.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
         </dependency>
     </dependencies>
     <dependencyManagement>

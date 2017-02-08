@@ -61,9 +61,9 @@
                     <img src="images/dropdown.gif"/></a>
                 <ul class="subnav" id="subnavlist">
                     <li id="subactive"><a name="menu" id="menuEditTest" href="Test.jsp" style="width:160px">Test</a></li>
-                    <li id="subactive"><a name="menu" id="menuTestCaseList" href="TestCaseList.jsp" style="width:130px">TestCase List</a></li>
-                    <li id="subactive"><a name="menu" id="menuEditTestCase" href="TestCase.jsp" style="width:130px">Edit TestCase</a></li>
-                    <li id="subactive"><a name="menu" id="menuTestBattery" href="TestBattery.jsp" style="width:130px">Test Battery</a></li>
+                    <li id="subactive"><a name="menu" id="menuTestCaseList" href="TestCaseList.jsp" style="width:130px">TestCase</a></li>
+                    <li id="subactive"><a name="menu" id="menuEditTestCase" href="TestCaseScript.jsp" style="width:130px">Edit TestCase</a></li>
+                    <li id="subactive"><a name="menu" id="menuTestBattery" href="TestBattery2.jsp" style="width:130px">Test Battery</a></li>
                     <li id="subactive"><a name="menu" id="menuLabel" href="Label.jsp" style="width:130px">Label</a></li>
                 </ul>
             </li>
@@ -72,7 +72,6 @@
             <li id="active"><a id="menuData" name="menu" href="#" style="width:100px">Data
                     <img src="images/dropdown.gif"/></a>
                 <ul class="subnav" id="subnavlist">
-                    <li id="subactive"><a id="menuTestData" href="TestData.jsp" style="width:190px">Test Data<input type="button" class="btn btn-danger btn-small active" value="Deprecated" style="padding: 0px; margin-left: 5px; color: red"></a></li>
                     <li id="subactive"><a name="menu" id="menuTestDataLib" href="TestDataLib.jsp" style="width:190px">Test Data Lib</a></li>
                 </ul>
             </li>
@@ -82,9 +81,9 @@
                     <img src="images/dropdown.gif"/></a>
                 <ul class="subnav" id="subnavlist">
                     <li id="subactive"><a name="menu" id="menuRunTestCase" href="RunTests1.jsp" style="width:200px">Run Tests</a></li>
-                    <li id="subactive"><a name="menu" id="menuRunTestSeePendingExecution" href="ExecutionPending.jsp" style="width:200px">See Execution In Queue</a></li>
+                    <li id="subactive"><a name="menu" id="menuRunTestSeePendingExecution" href="ExecutionPending2.jsp" style="width:200px">See Execution In Queue</a></li>
                     <li id="subactive"><a name="menu" id="menuRobot" href="Robot.jsp" style="width:200px">Robot</a></li>
-                    <li id="subactive"><a name="menu" id="menuTestCampaign" href="TestCampaign.jsp" style="width:160px">Test Campaign</a></li>
+                    <li id="subactive"><a name="menu" id="menuTestCampaign" href="TestCampaign2.jsp" style="width:160px">Test Campaign</a></li>
                 </ul>
             </li>
             <% }%>
@@ -92,12 +91,8 @@
             <li id="active"><a id="menuExecutionReporting" name="menu" href="#" style="width:170px">Execution Reporting
                     <img src="images/dropdown.gif"/></a>
                 <ul class="subnav" id="subnavlist">
-                    <li id="subactive"><a name="menu" id="menuExecutionPerBuildRevision" href="ExecutionPerBuildRevision" style="width:200px">Execution Per Build/Rev</a></li>
-                    <li id="subactive"><a name="menu" id="menuReportingExecutionStatus" href="ReportingExecution.jsp" style="width:200px">Execution Status</a></li>
-                    <li id="subactive"><a name="menu" id="menuReportingExecutionTime" href="ReportingExecutionTime.jsp" style="width:200px">Execution Time</a></li>
-                    <li id="subactive"><a name="menu" id="menuReportingExecutionDetail" href="ExecutionDetailList.jsp" style="width:200px">Execution Detail</a></li>
+                    <li id="subactive"><a name="menu" id="menuReportingExecution" href="TestCaseExecution.jsp" style="width:200px">Execution List</a></li>
                     <li id="subactive"><a name="menu" id="menuReportingExecutionByTag" href="ReportingExecutionByTag.jsp" style="width:200px">Execution Report By Tag</a></li>
-                    <li id="subactive"><a id="menuReportingExecutionStatusBeta" href="ReportingExecution1.jsp" style="width:200px">Execution Status<input type="button" class="btn btn-danger btn-small active" value="Beta" style="padding: 0px; margin-left: 5px; color: orange"></a></li>
                 </ul>
             </li>
             <% }%>
@@ -107,7 +102,7 @@
                 <ul class="subnav" id="subnavlist">
                     <li id="subactive"><a name="menu" id="menuApplications" href="Application.jsp" style="width:200px">Applications</a></li>
                     <li id="subactive"><a name="menu" id="menuApplicationObjects" href="ApplicationObject.jsp" style="width:200px">Application Objects</a></li>
-                    <li id="subactive"><a name="menu" id="menuSoapLibrary" href="SoapLibrary.jsp" style="width:130px">SOAP Library</a></li>
+                    <li id="subactive"><a name="menu" id="menuAppService" href="AppService.jsp" style="width:130px">Service Library</a></li>
                     <li id="subactive"><a name="menu" id="menuSqlLibrary" href="SqlLibrary.jsp" style="width:190px">SQL Library</a></li>
                     <li id="subactive"><a name="menu" id="menuDeployType" href="DeployType.jsp" style="width:200px">Deploy Type</a></li>
                 </ul>
@@ -130,7 +125,7 @@
             <li id="active"><a id="menuAdmin" name="menuAdmin" href="#" style="width:100px">Admin
                     <img src="images/dropdown.gif"/></a>
                 <ul class="subnav" id="subnavlist">
-                    <li id="subactive"><a name="menu" id="menuUsersManager" href="UserManager.jsp" style="width:200px">Users Manager</a></li>
+                    <li id="subactive"><a name="menu" id="menuUsersManager" href="UserManager2.jsp" style="width:200px">Users Manager</a></li>
                     <li id="subactive"><a name="menu" id="menuLogViewer" href="LogViewer.jsp" style="width:200px">Log Viewer</a></li>
                     <li id="subactive"><a name="menu" id="menuDatabaseMaintenance" href="DatabaseMaintenance.jsp" style="width:200px">Database Maintenance</a></li>
                     <li id="subactive"><a name="menu" id="menuParameter" href="Parameter.jsp" style="width:200px">Parameters</a></li>

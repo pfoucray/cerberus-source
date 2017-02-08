@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
     <welcome-file-list>
         <welcome-file>Homepage.jsp</welcome-file>
     </welcome-file-list>
@@ -83,6 +82,10 @@
     <servlet>
         <servlet-name>ResultCI</servlet-name>
         <servlet-class>org.cerberus.servlet.zzpublic.ResultCI</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ResultCIV001</servlet-name>
+        <servlet-class>org.cerberus.servlet.zzpublic.ResultCIV001</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>DuplicateTestCase</servlet-name>
@@ -181,6 +184,22 @@
         <servlet-class>org.cerberus.servlet.GetConnectionPoolName</servlet-class>
     </servlet>
     <servlet>
+        <servlet-name>ReadExecutionPool</servlet-name>
+        <servlet-class>org.cerberus.servlet.engine.threadpool.ReadExecutionPool</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ReadExecutionPools</servlet-name>
+        <servlet-class>org.cerberus.servlet.engine.threadpool.ReadExecutionPools</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ManageExecutionPool</servlet-name>
+        <servlet-class>org.cerberus.servlet.engine.threadpool.ManageExecutionPool</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ReadTestCaseExecutionMedia</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.testexecution.ReadTestCaseExecutionMedia</servlet-class>
+    </servlet>
+    <servlet>
         <description>This Servlet is used to Record a new Release inside the pending sprint.</description>
         <servlet-name>NewRelease</servlet-name>
         <servlet-class>org.cerberus.servlet.zzpublic.NewRelease</servlet-class>
@@ -227,6 +246,10 @@
     <servlet>
         <servlet-name>ReadTestCaseExecution</servlet-name>
         <servlet-class>org.cerberus.servlet.crud.testexecution.ReadTestCaseExecution</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ReadTestCaseExecutionImage</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.testexecution.ReadTestCaseExecutionImage</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>ReadTag</servlet-name>
@@ -437,6 +460,10 @@
         <servlet-class>org.cerberus.servlet.crud.countryenvironment.ReadApplicationObject</servlet-class>
     </servlet>
     <servlet>
+        <servlet-name>ReadApplicationObjectImage</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.countryenvironment.ReadApplicationObjectImage</servlet-class>
+    </servlet>
+    <servlet>
         <servlet-name>NewBuildRev</servlet-name>
         <servlet-class>org.cerberus.servlet.integration.NewBuildRev</servlet-class>
     </servlet>
@@ -483,10 +510,6 @@
     <servlet>
         <servlet-name>GetDataForTestCaseSearch</servlet-name>
         <servlet-class>org.cerberus.servlet.crud.test.GetDataForTestCaseSearch</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>SaveManualExecution</servlet-name>
-        <servlet-class>org.cerberus.servlet.manualtestcase.SaveManualExecution</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>ReadParameter</servlet-name>
@@ -552,46 +575,21 @@
         <servlet-name>UpdateSqlLibrary2</servlet-name>
         <servlet-class>org.cerberus.servlet.crud.countryenvironment.UpdateSqlLibrary2</servlet-class>
     </servlet>
-    <!-- // TODO REMOVE
     <servlet>
-        <servlet-name>FindAllInvariantPublic</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.transversaltables.FindAllInvariantPublic</servlet-class>
+        <servlet-name>CreateAppService</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.countryenvironment.CreateAppService</servlet-class>
     </servlet>
     <servlet>
-        <servlet-name>FindAllInvariantPrivate</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.transversaltables.FindAllInvariantPrivate</servlet-class>
-    </servlet>-->
-    <servlet>
-        <servlet-name>CreateSoapLibrary</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.testdata.CreateSoapLibrary</servlet-class>
+        <servlet-name>DeleteAppService</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.countryenvironment.DeleteAppService</servlet-class>
     </servlet>
     <servlet>
-        <servlet-name>CreateSoapLibrary2</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.countryenvironment.CreateSoapLibrary2</servlet-class>
+        <servlet-name>ReadAppService</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.countryenvironment.ReadAppService</servlet-class>
     </servlet>
     <servlet>
-        <servlet-name>DeleteSoapLibrary</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.testdata.DeleteSoapLibrary</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>DeleteSoapLibrary2</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.countryenvironment.DeleteSoapLibrary2</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>FindAllSoapLibrary</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.testdata.FindAllSoapLibrary</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>ReadSoapLibrary</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.countryenvironment.ReadSoapLibrary</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>UpdateSoapLibrary</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.testdata.UpdateSoapLibrary</servlet-class>
-    </servlet>
-    <servlet>
-        <servlet-name>UpdateSoapLibrary2</servlet-name>
-        <servlet-class>org.cerberus.servlet.crud.countryenvironment.UpdateSoapLibrary2</servlet-class>
+        <servlet-name>UpdateAppService</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.countryenvironment.UpdateAppService</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>CreateInvariant2</servlet-name>
@@ -764,6 +762,10 @@
     <servlet>
         <servlet-name>UpdateTestCaseWithDependencies1</servlet-name>
         <servlet-class>org.cerberus.servlet.crud.test.UpdateTestCaseWithDependencies1</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>UpdateTestCaseProperties1</servlet-name>
+        <servlet-class>org.cerberus.servlet.crud.test.UpdateTestCaseProperties1</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>DeleteTestCaseFromTestPage</servlet-name>
@@ -1009,6 +1011,10 @@
         <url-pattern>/ResultCI</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
+        <servlet-name>ResultCIV001</servlet-name>
+        <url-pattern>/ResultCIV001</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>TestcaseList</servlet-name>
         <url-pattern>/TestcaseList</url-pattern>
     </servlet-mapping>
@@ -1105,6 +1111,22 @@
         <url-pattern>/GetConnectionPoolName</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
+        <servlet-name>ReadExecutionPool</servlet-name>
+        <url-pattern>/ReadExecutionPool</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ReadExecutionPools</servlet-name>
+        <url-pattern>/ReadExecutionPools</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ManageExecutionPool</servlet-name>
+        <url-pattern>/ManageExecutionPool</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ReadTestCaseExecutionMedia</servlet-name>
+        <url-pattern>/ReadTestCaseExecutionMedia</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>GetNumberOfExecutions</servlet-name>
         <url-pattern>/GetNumberOfExecutions</url-pattern>
     </servlet-mapping>
@@ -1179,6 +1201,10 @@
     <servlet-mapping>
         <servlet-name>ReadTestCaseExecution</servlet-name>
         <url-pattern>/ReadTestCaseExecution</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ReadTestCaseExecutionImage</servlet-name>
+        <url-pattern>/ReadTestCaseExecutionImage</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>ReadTag</servlet-name>
@@ -1365,6 +1391,10 @@
         <url-pattern>/UpdateApplicationObject</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
+        <servlet-name>ReadApplicationObjectImage</servlet-name>
+        <url-pattern>/ReadApplicationObjectImage</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>ReadApplicationObject</servlet-name>
         <url-pattern>/ReadApplicationObject</url-pattern>
     </servlet-mapping>
@@ -1437,10 +1467,6 @@
         <url-pattern>/GetDataForTestCaseSearch</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>SaveManualExecution</servlet-name>
-        <url-pattern>/SaveManualExecution</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
         <servlet-name>ReadParameter</servlet-name>
         <url-pattern>/ReadParameter</url-pattern>
     </servlet-mapping>
@@ -1505,36 +1531,20 @@
         <url-pattern>/UpdateSqlLibrary2</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>CreateSoapLibrary</servlet-name>
-        <url-pattern>/CreateSoapLibrary</url-pattern>
+        <servlet-name>CreateAppService</servlet-name>
+        <url-pattern>/CreateAppService</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>CreateSoapLibrary2</servlet-name>
-        <url-pattern>/CreateSoapLibrary2</url-pattern>
+        <servlet-name>DeleteAppService</servlet-name>
+        <url-pattern>/DeleteAppService</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>DeleteSoapLibrary</servlet-name>
-        <url-pattern>/DeleteSoapLibrary</url-pattern>
+        <servlet-name>ReadAppService</servlet-name>
+        <url-pattern>/ReadAppService</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>DeleteSoapLibrary2</servlet-name>
-        <url-pattern>/DeleteSoapLibrary2</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>FindAllSoapLibrary</servlet-name>
-        <url-pattern>/FindAllSoapLibrary</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>ReadSoapLibrary</servlet-name>
-        <url-pattern>/ReadSoapLibrary</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>UpdateSoapLibrary</servlet-name>
-        <url-pattern>/UpdateSoapLibrary</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>UpdateSoapLibrary2</servlet-name>
-        <url-pattern>/UpdateSoapLibrary2</url-pattern>
+        <servlet-name>UpdateAppService</servlet-name>
+        <url-pattern>/UpdateAppService</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>CreateInvariant2</servlet-name>
@@ -1707,6 +1717,10 @@
     <servlet-mapping>
         <servlet-name>UpdateTestCaseWithDependencies1</servlet-name>
         <url-pattern>/UpdateTestCaseWithDependencies1</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>UpdateTestCaseProperties1</servlet-name>
+        <url-pattern>/UpdateTestCaseProperties1</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>DeleteTestCaseFromTestPage</servlet-name>
@@ -1966,7 +1980,9 @@
             <web-resource-name>jsp</web-resource-name>
             <description>jsp</description>
             <url-pattern>/ExecutionDetail.jsp</url-pattern>
-            <url-pattern>/ExecutionDetail1.jsp</url-pattern>
+            <url-pattern>/ExecutionDetail2.jsp</url-pattern>
+            <url-pattern>/ExecutionManual.jsp</url-pattern>
+            <url-pattern>/TestCaseExecution.jsp</url-pattern>
             <url-pattern>/ExecutionDetailList.jsp</url-pattern>
             <url-pattern>/ExecutionPerBuildRevision.jsp</url-pattern>
             <url-pattern>/NetworkTraficDetail.jsp</url-pattern>
@@ -1994,7 +2010,11 @@
         <web-resource-collection>
             <web-resource-name>servlet</web-resource-name>
             <description>servlet</description>
+            <url-pattern>/ManageExecutionPool</url-pattern>
+            <url-pattern>/ReadExecutionPool</url-pattern>
+            <url-pattern>/ReadExecutionPools</url-pattern>
             <url-pattern>/GetTestCaseList</url-pattern>
+            <url-pattern>/ReadTestCaseExecutionMedia</url-pattern>
             <url-pattern>/GetTestCase</url-pattern>
             <url-pattern>/TestcaseList</url-pattern>
             <url-pattern>/ExportListTestCase</url-pattern>
@@ -2029,7 +2049,7 @@
             <url-pattern>/ImportTestCase.jsp</url-pattern>
             <url-pattern>/TestData.jsp</url-pattern>
             <url-pattern>/SqlLibrary.jsp</url-pattern>
-            <url-pattern>/SoapLibrary.jsp</url-pattern>
+            <url-pattern>/AppService.jsp</url-pattern>
             <url-pattern>/TestDataLib.jsp</url-pattern>
             <url-pattern>/Label.jsp</url-pattern>
         </web-resource-collection>
@@ -2056,12 +2076,11 @@
             <url-pattern>/ReadTestDataLibData</url-pattern>
             <url-pattern>/FindAllSqlLibrary</url-pattern>
             <url-pattern>/ReadSqlLibrary</url-pattern>
-            <url-pattern>/FindAllSoapLibrary</url-pattern>
-            <url-pattern>/ReadSoapLibrary</url-pattern>
             <url-pattern>/PictureConnector</url-pattern>
             <url-pattern>/UseTestCaseStep</url-pattern>
             <url-pattern>/UpdateTestCaseWithDependencies</url-pattern>
             <url-pattern>/UpdateTestCaseWithDependencies1</url-pattern>
+            <url-pattern>/UpdateTestCaseProperties1</url-pattern>
             <url-pattern>/ImportTestCaseFromJson</url-pattern>
             <url-pattern>/Thumbnailer</url-pattern>
             <url-pattern>/UpdateTestCaseField</url-pattern>
@@ -2116,7 +2135,6 @@
         <web-resource-collection>
             <web-resource-name>jsp</web-resource-name>
             <description>jsp</description>
-            <url-pattern>/RunManualTestCase.jsp</url-pattern>
             <url-pattern>/RunTests.jsp</url-pattern>
             <url-pattern>/RunTestsSearchFilters.jsp</url-pattern>
             <url-pattern>/RunTestsSearchResult.jsp</url-pattern>
@@ -2153,12 +2171,6 @@
             <url-pattern>/DeleteTestDataLib</url-pattern>
             <url-pattern>/UpdateTestDataLibData</url-pattern>
             <url-pattern>/UpdateTestDataLib</url-pattern>
-            <url-pattern>/CreateSoapLibrary</url-pattern>
-            <url-pattern>/DeleteSoapLibrary</url-pattern>
-            <url-pattern>/UpdateSoapLibrary</url-pattern>
-            <url-pattern>/CreateSoapLibrary2</url-pattern>
-            <url-pattern>/DeleteSoapLibrary2</url-pattern>
-            <url-pattern>/UpdateSoapLibrary2</url-pattern>
         </web-resource-collection>
         <auth-constraint>
             <description>TestDataManager</description>
@@ -2201,6 +2213,7 @@
             <url-pattern>/ReadCountryEnvironmentDatabase</url-pattern>
             <url-pattern>/ReadCountryEnvironmentParameters</url-pattern>
             <url-pattern>/ReadCountryEnvLink</url-pattern>
+            <url-pattern>/ReadAppService</url-pattern>
         </web-resource-collection>
         <auth-constraint>
             <description>IntegratorRO</description>
@@ -2246,6 +2259,9 @@
             <url-pattern>/CreateBatchInvariant</url-pattern>
             <url-pattern>/DeleteBatchInvariant</url-pattern>
             <url-pattern>/UpdateBatchInvariant</url-pattern>
+            <url-pattern>/CreateAppService</url-pattern>
+            <url-pattern>/DeleteAppService</url-pattern>
+            <url-pattern>/UpdateAppService</url-pattern>
         </web-resource-collection>
         <auth-constraint>
             <description>Integrator</description>
@@ -2295,7 +2311,6 @@
             <web-resource-name>servlet</web-resource-name>
             <description>servlet</description>
             <url-pattern>/GetParameter</url-pattern>
-            <url-pattern>/ReadParameter</url-pattern>
             <url-pattern>/UpdateParameter</url-pattern>
             <url-pattern>/GetUsers</url-pattern>
             <url-pattern>/FindAllUsers</url-pattern>
@@ -2343,6 +2358,7 @@
             <url-pattern>/SaveStatistic</url-pattern>
             <url-pattern>/GetNumberOfExecutions</url-pattern>
             <url-pattern>/ResultCI</url-pattern>
+            <url-pattern>/ResultCIV001</url-pattern>
             <url-pattern>/GetConnectionPoolName</url-pattern>
             <url-pattern>/SaveManualExecution</url-pattern>
             <url-pattern>/SaveManualExecutionPicture</url-pattern>
@@ -2385,7 +2401,9 @@
             <url-pattern>/ReadDocumentation</url-pattern>
             <url-pattern>/ReadCerberusInformation</url-pattern>
             <url-pattern>/ReadTestCaseExecution</url-pattern>
+            <url-pattern>/ReadTestCaseExecutionImage</url-pattern>
             <url-pattern>/ReadTag</url-pattern>
+            <url-pattern>/ReadParameter</url-pattern>
             <url-pattern>/SaveManualExecutionPictureTest</url-pattern>
             <url-pattern>/ReadCampaign</url-pattern>
             <url-pattern>/ReadCampaignContent</url-pattern>
@@ -2425,6 +2443,7 @@
             <url-pattern>/GetReportData</url-pattern>
             <url-pattern>/ReadApplication</url-pattern>
             <url-pattern>/ReadApplicationObject</url-pattern>
+            <url-pattern>/ReadApplicationObjectImage</url-pattern>
             <url-pattern>/ReadBuildRevisionInvariant</url-pattern>
             <url-pattern>/ReadProject</url-pattern>
             <url-pattern>/ReadRobot</url-pattern>

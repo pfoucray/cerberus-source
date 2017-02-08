@@ -25,9 +25,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.cerberus.crud.dao.ITestCaseExecutionDAO;
 import org.cerberus.crud.dao.ITestCaseStepActionExecutionDAO;
+import org.cerberus.crud.entity.TestCaseExecutionFile;
+import org.cerberus.crud.entity.TestCaseStepActionControlExecution;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
+import org.cerberus.crud.service.ITestCaseExecutionFileService;
 import org.cerberus.crud.service.ITestCaseStepActionControlExecutionService;
 import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ITestCaseStepActionExecutionService;
@@ -50,7 +54,11 @@ public class TestCaseStepActionExecutionService implements ITestCaseStepActionEx
     ITestCaseExecutionDAO testCaseExecutionDao;
     @Autowired
     ITestCaseStepActionControlExecutionService testCaseStepActionControlExecutionService;
+    @Autowired
+    ITestCaseExecutionFileService testCaseExecutionFileService;
 
+    private static final Logger LOG = Logger.getLogger(TestCaseStepActionExecutionService.class);
+    
     @Override
     public void insertTestCaseStepActionExecution(TestCaseStepActionExecution testCaseStepActionExecution) {
         this.testCaseStepActionExecutionDao.insertTestCaseStepActionExecution(testCaseStepActionExecution);
@@ -63,8 +71,8 @@ public class TestCaseStepActionExecutionService implements ITestCaseStepActionEx
     }
 
     @Override
-    public List<TestCaseStepActionExecution> findTestCaseStepActionExecutionByCriteria(long id, String test, String testCase, int step) {
-        return testCaseStepActionExecutionDao.findTestCaseStepActionExecutionByCriteria(id, test, testCase, step);
+    public List<TestCaseStepActionExecution> findTestCaseStepActionExecutionByCriteria(long id, String test, String testCase, int step, int index) {
+        return testCaseStepActionExecutionDao.findTestCaseStepActionExecutionByCriteria(id, test, testCase, step, index);
     }
 
     @Override
@@ -118,24 +126,30 @@ public class TestCaseStepActionExecutionService implements ITestCaseStepActionEx
     }
 
     @Override
-    public AnswerList readByVarious1(long executionId, String test, String testcase, int step) {
-        return testCaseStepActionExecutionDao.readByVarious1(executionId, test, testcase, step);
+    public AnswerList readByVarious1(long executionId, String test, String testcase, int step, int index) {
+        return testCaseStepActionExecutionDao.readByVarious1(executionId, test, testcase, step, index);
     }
 
     @Override
-    public AnswerItem readByKey(long executionId, String test, String testcase, int step, int sequence) {
-        return testCaseStepActionExecutionDao.readByKey(executionId, test, testcase, step, sequence);
+    public AnswerItem readByKey(long executionId, String test, String testcase, int step, int index, int sequence) {
+        return testCaseStepActionExecutionDao.readByKey(executionId, test, testcase, step, index, sequence);
     }
 
     @Override
-    public AnswerList readByVarious1WithDependency(long executionId, String test, String testcase, int step) {
-        AnswerList actions = this.readByVarious1(executionId, test, testcase, step);
+    public AnswerList readByVarious1WithDependency(long executionId, String test, String testcase, int step, int index) {
+        AnswerList actions = this.readByVarious1(executionId, test, testcase, step, index);
         AnswerList response = null;
         List<TestCaseStepActionExecution> tcsaeList = new ArrayList();
         for (Object action : actions.getDataList()) {
+
             TestCaseStepActionExecution tcsae = (TestCaseStepActionExecution) action;
-            AnswerList controls = testCaseStepActionControlExecutionService.readByVarious1(executionId, test, testcase, step, tcsae.getSequence());
-            tcsae.setTestCaseStepActionControlExecutionList(controls);
+
+            AnswerList controls = testCaseStepActionControlExecutionService.readByVarious1WithDependency(executionId, test, testcase, step, index, tcsae.getSequence());
+            tcsae.setTestCaseStepActionControlExecutionList((List<TestCaseStepActionControlExecution>) controls.getDataList());
+
+            AnswerList files = testCaseExecutionFileService.readByVarious(executionId, tcsae.getTest() + "-" + tcsae.getTestCase() + "-" + tcsae.getStep() + "-" + tcsae.getIndex() + "-" + tcsae.getSequence());
+            tcsae.setFileList((List<TestCaseExecutionFile>) files.getDataList());
+
             tcsaeList.add(tcsae);
         }
         response = new AnswerList(tcsaeList, actions.getTotalRows());

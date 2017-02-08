@@ -71,13 +71,20 @@ public final class StringUtil {
      * @param str
      * @return true if str is a numeric value, else false
      */
-    public static boolean isNumeric(String str) {
+    public static boolean isInteger(String str) {
         try {
             Integer.parseInt(str);
         } catch (NumberFormatException nfe) {
             return false;
         }
         return true;
+    }
+
+    public static String prepareToNumeric(String str) {
+        if (str.contains(",")) {
+            return str.replace(",", ".");
+        }
+        return str;
     }
 
     /**
@@ -179,11 +186,21 @@ public final class StringUtil {
         return textIn.replaceAll("\"", "\"\"");
     }
 
+    /**
+     *
+     * @param inputString
+     * @return
+     */
     public static String sanitize(String inputString) {
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
         return policy.sanitize(inputString);
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
     public static String replaceUrlByLinkInString(String text) {
         if (text != null && !text.isEmpty()) {
             Matcher matcher = urlMatch.matcher(text);
@@ -194,6 +211,23 @@ public final class StringUtil {
         return text;
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
+    public static String replaceInvisibleCharbyString(String text) {
+        if (text != null && !text.isEmpty()) {
+            return text.replace("\n", "\\n");
+        }
+        return text;
+    }
+
+    /**
+     *
+     * @param text
+     * @return
+     */
     public static String textToHtmlConvertingURLsToLinks(String text) {
         if (text == null) {
             return text;
@@ -287,6 +321,53 @@ public final class StringUtil {
 
     }
 
+    /**
+     *
+     * This method is used to build an URL from host, contextroot and uri by
+     * managing the /.<br>
+     * For Ex : host = www.laredoute.fr/, contextroot = /fr/, uri = /toto.jsp
+     * will provide the result : www.laredoute.fr/fr/toto.jsp<br>
+     * in stead of www.laredoute.fr//fr//toto.jsp<br>
+     * host = www.laredoute.fr, contextroot = fr, uri = toto.jsp will provide
+     * the result : www.laredoute.fr/fr/toto.jsp<br>
+     * in stead of www.laredoute.frfrtoto.jsp<br>
+     * Protocol will be added in case host did not already have the protocol.
+     *
+     * @param host
+     * @param contextRoot
+     * @param uri
+     * @param protocol
+     * @return true is URL looks OK and false on any other cases.
+     */
+    public static String getURLFromString(String host, String contextRoot, String uri, String protocol) {
+        String result = "";
+        if (!isNullOrEmpty(host)) {
+            result += StringUtil.addSuffixIfNotAlready(host, "/");
+        }
+        if (!isNullOrEmpty(contextRoot)) {
+            if (contextRoot.startsWith("/")) {
+                contextRoot = contextRoot.substring(1);
+            }
+            result += StringUtil.addSuffixIfNotAlready(contextRoot, "/");
+        }
+        if (!isNullOrEmpty(uri)) {
+            if (uri.startsWith("/")) {
+                uri = uri.substring(1);
+            }
+            result += uri;
+        }
+        if (!(StringUtil.isURL(result))) { // If still does not look lke an URL, we add protocol string ( ex : http://) by default.
+            result = protocol + result;
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param text
+     * @param suffix
+     * @return
+     */
     public static String addSuffixIfNotAlready(String text, String suffix) {
         if (text.toUpperCase().endsWith(suffix.toUpperCase())) {
             return text;

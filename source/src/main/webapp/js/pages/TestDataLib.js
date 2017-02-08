@@ -341,8 +341,8 @@ function addTestDataLibModalSaveHandler() {
     // Get the header data from the form.
     var data = convertSerialToJSONObject(formAdd.serialize());
     //Add envelope and script, not in the form
-    data.envelope = encodeURI($("#addTestDataLibModalForm #envelope").text());
-    data.script = encodeURI($("#addTestDataLibModalForm #script").text());
+    data.envelope = encodeURIComponent($("#addTestDataLibModalForm #envelope").text());
+    data.script = encodeURIComponent($("#addTestDataLibModalForm #script").text());
 
     $.ajax({
         url: "CreateTestDataLib",
@@ -507,8 +507,8 @@ function duplicateTestDataLibModalSaveHandler() {
     // Get the header data from the form.
     var data = convertSerialToJSONObject(formAdd.serialize());
     //Add envelope and script, not in the form
-    data.envelope = encodeURI($("#duplicateTestDataLibModal #envelope").text());
-    data.script = encodeURI($("#duplicateTestDataLibModal #script").text());
+    data.envelope = encodeURIComponent($("#duplicateTestDataLibModal #envelope").text());
+    data.script = encodeURIComponent($("#duplicateTestDataLibModal #script").text());
 
     $.ajax({
         url: "CreateTestDataLib",
@@ -706,8 +706,8 @@ function editTestDataLibModalSaveHandler() {
     // Get the header data from the form.
     var data = convertSerialToJSONObject(formEdit.serialize());
     //Add envelope and script, not in the form
-    data.envelope = encodeURI($("form#editTestLibData #envelope").text());
-    data.script = encodeURI($("form#editTestLibData #script").text());
+    data.envelope = encodeURIComponent($("form#editTestLibData #envelope").text());
+    data.script = encodeURIComponent($("form#editTestLibData #script").text());
 
     $.ajax({
         url: "UpdateTestDataLib",
@@ -921,16 +921,16 @@ function appendSubDataRow(subdata, targetTableBody) {
     }
     if (isKey) {
         var deleteBtn = $("<button type=\"button\" disabled=\"disabled\"></button>").addClass("btn btn-default btn-xs").append($("<span></span>").addClass("glyphicon glyphicon-trash"));
-        var subDataInput = $("<input  maxlength=\"25\" disabled=\"disabled\">").addClass("form-control input-sm").val(subdata.subData);
+        var subDataInput = $("<input  maxlength=\"200\" disabled=\"disabled\">").addClass("form-control input-sm").val(subdata.subData);
     } else {
         var deleteBtn = $("<button type=\"button\"></button>").addClass("btn btn-default btn-xs").append($("<span></span>").addClass("glyphicon glyphicon-trash"));
-        var subDataInput = $("<input  maxlength=\"25\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "subData") + " --\">").addClass("form-control input-sm").val(subdata.subData);
+        var subDataInput = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "subData") + " --\">").addClass("form-control input-sm").val(subdata.subData);
     }
-    var valueInput = $("<input  maxlength=\"25\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "value") + " --\">").addClass("form-control input-sm").val(subdata.value);
-    var columnInput = $("<input  maxlength=\"25\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "column") + " --\">").addClass("form-control input-sm").val(subdata.column);
-    var parsingAnswerInput = $("<input  maxlength=\"25\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "parsingAnswer") + " --\">").addClass("form-control input-sm").val(subdata.parsingAnswer);
-    var columnPositionInput = $("<input  maxlength=\"25\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "columnPosition") + " --\">").addClass("form-control input-sm").val(subdata.columnPosition);
-    var descriptionInput = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "description") + " --\">").addClass("form-control input-sm").val(subdata.description);
+    var valueInput = $("<input placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "value") + " --\">").addClass("form-control input-sm").val(subdata.value);
+    var columnInput = $("<input  maxlength=\"255\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "column") + " --\">").addClass("form-control input-sm").val(subdata.column);
+    var parsingAnswerInput = $("<input placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "parsingAnswer") + " --\">").addClass("form-control input-sm").val(subdata.parsingAnswer);
+    var columnPositionInput = $("<input  maxlength=\"45\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "columnPosition") + " --\">").addClass("form-control input-sm").val(subdata.columnPosition);
+    var descriptionInput = $("<input  maxlength=\"1000\" placeholder=\"-- " + doc.getDocLabel("testdatalibdata", "description") + " --\">").addClass("form-control input-sm").val(subdata.description);
     var table = $("#" + targetTableBody);
 
 
@@ -1105,7 +1105,7 @@ function getTestCasesUsing(testDataLibID, name, country) {
 
 
             $.each(obj[3], function (idx2, obj2) {
-                var hrefTest = 'TestCase.jsp?Test=' + obj[0] + '&TestCase=' + obj2.TestCaseNumber;
+                var hrefTest = 'TestCaseScript.jsp?test=' + obj[0] + '&testcase=' + obj2.TestCaseNumber;
                 htmlContent += '<span class="list-group-item sub-item ListItem" data-parent="#sub_cat' + idx + '" style="padding-left: 78px;">';
                 htmlContent += '<span class="pull-left"><a href="' + hrefTest + '" target="_blank">' + obj2.TestCaseNumber + '- ' + obj2.TestCaseDescription + '</a></span>';
                 htmlContent += '<span class="pull-right">' + doc.getDocLabel("page_testdatalib_m_gettestcases", "nrProperties") + " " + obj2.NrProperties + '</span><br/>';

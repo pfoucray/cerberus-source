@@ -35,31 +35,29 @@ function initPage() {
     $('#editInvariantModal').on('hidden.bs.modal', editEntryModalCloseHandler);
     $('#addInvariantModal').on('hidden.bs.modal', addEntryModalCloseHandler);
     $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-        if(e.target.innerText == "Private"){
+        if (e.target.href.indexOf("private") !== -1) {
             displayPrivateTable();
-        }else{
+        } else {
             displayPublicTable();
         }
     });
     displayPublicTable();
 }
 
-function displayPrivateTable(){
-    if ( $.fn.dataTable.isDataTable( '#invariantsPrivateTable' ) ) {
+function displayPrivateTable() {
+    if ($.fn.dataTable.isDataTable('#invariantsPrivateTable')) {
         $('#invariantsPrivateTable').DataTable();
-    }
-    else {
+    } else {
         //configure and create the dataTable
         var configurationsPriv = new TableConfigurationsServerSide("invariantsPrivateTable", "ReadInvariant?access=PRIVATE", "contentTable", aoColumnsFunc2(), [1, 'asc']);
         createDataTableWithPermissions(configurationsPriv, renderOptionsForApplication2, "#invariantPrivateList");
     }
 }
 
-function displayPublicTable(){
-    if ( $.fn.dataTable.isDataTable( '#invariantsTable' ) ) {
+function displayPublicTable() {
+    if ($.fn.dataTable.isDataTable('#invariantsTable')) {
         $('#invariantsTable').DataTable();
-    }
-    else {
+    } else {
         //configure and create the dataTable
         var configurations = new TableConfigurationsServerSide("invariantsTable", "ReadInvariant?access=PUBLIC", "contentTable", aoColumnsFunc(), [1, 'asc']);
         createDataTableWithPermissions(configurations, renderOptionsForApplication, "#invariantList");
@@ -82,8 +80,8 @@ function displayPageLabel() {
     $("[name='gp3Field']").html(doc.getDocLabel("page_invariant", "gp3"));
     $("[name='buttonClose']").html(doc.getDocLabel("page_invariant", "close_btn"));
     $("[name='buttonAdd']").html(doc.getDocLabel("page_invariant", "save_btn"));
-    $("#invariantListLabel").html("<span class='glyphicon glyphicon-list'></span> "+doc.getDocLabel("page_invariant", "public_invariant"))
-    $("#invariantPrivateListLabel").html("<span class='glyphicon glyphicon-list'></span> "+doc.getDocLabel("page_invariant", "private_invariant"))
+    $("#invariantListLabel").html("<span class='glyphicon glyphicon-list'></span> " + doc.getDocLabel("page_invariant", "public_invariant"))
+    $("#invariantPrivateListLabel").html("<span class='glyphicon glyphicon-list'></span> " + doc.getDocLabel("page_invariant", "private_invariant"))
     $("a[href='#public']").html(doc.getDocLabel("page_invariant", "public"));
     $("a[href='#private']").html(doc.getDocLabel("page_invariant", "private"));
 
@@ -116,9 +114,9 @@ function renderOptionsForApplication2(data) {
 function addEntryClick() {
     clearResponseMessageMainPage();
     $("#addInvariantModal #idname").empty();
-    getInvariantList("INVARIANTPUBLIC",function(data){
-        for(var i in data){
-            $("#addInvariantModal #idname").append($("<option>"+i+"</option>"))
+    getInvariantList("INVARIANTPUBLIC", function (data) {
+        for (var i in data) {
+            $("#addInvariantModal #idname").append($("<option>" + i + "</option>"))
         }
     });
 
@@ -129,11 +127,11 @@ function editEntryClick(param, value) {
     var formEdit = $('#editInvariantModal');
 
     $.ajax({
-        url: "ReadInvariant?idName="+param+"&value="+value,
+        url: "ReadInvariant?idName=" + param + "&value=" + value,
         async: true,
         method: "GET",
         success: function (data) {
-            if(data.messageType === "OK") {
+            if (data.messageType === "OK") {
                 formEdit.find("#idname").prop("value", data.invariant.idName);
                 formEdit.find("#value").prop("value", data.invariant.value);
                 formEdit.find("#sort").prop("value", data.invariant.sort);
@@ -144,7 +142,7 @@ function editEntryClick(param, value) {
                 formEdit.find("#gp3").prop("value", data.invariant.gp3);
 
                 formEdit.modal('show');
-            }else{
+            } else {
                 showUnexpectedError();
             }
         },
@@ -156,11 +154,11 @@ function viewEntryClick(param, value) {
     var formEdit = $('#editInvariantModal');
 
     $.ajax({
-        url: "ReadInvariant?idName="+param+"&value="+value,
+        url: "ReadInvariant?idName=" + param + "&value=" + value,
         async: true,
         method: "GET",
         success: function (data) {
-            if(data.messageType === "OK") {
+            if (data.messageType === "OK") {
                 formEdit.find("#idname").prop("value", data.invariant.idName);
                 formEdit.find("#value").prop("value", data.invariant.value);
                 formEdit.find("#sort").prop("value", data.invariant.sort);
@@ -183,7 +181,7 @@ function viewEntryClick(param, value) {
                 $('#editInvariantButton').attr('hidden', 'hidden');
 
                 formEdit.modal('show');
-            }else{
+            } else {
                 showUnexpectedError();
             }
         },
@@ -193,25 +191,33 @@ function viewEntryClick(param, value) {
 
 function removeEntryClick(param, value) {
     var doc = new Doc();
-    showModalConfirmation(function(ev){
-        var param = $('#confirmationModal #hiddenField1').prop("value");
-        var value = $('#confirmationModal #hiddenField2').prop("value");
-        $.ajax({
-            url: "DeleteInvariant2?idName="+param+"&value="+value,
-            async: true,
-            method: "GET",
-            success: function (data) {
-                hideLoaderInModal('#removeInvariantModal');
-                var oTable = $("#invariantsTable").dataTable();
-                oTable.fnDraw(true);
-                $('#removeInvariantModal').modal('hide');
-                showMessage(data);
-            },
-            error: showUnexpectedError
-        });
+    showModalConfirmation(deleteEntryHandlerClick, doc.getDocLabel("page_invariant", "message_remove"), doc.getDocLabel("page_invariant", "message_remove"), param, value, "", "");
+}
 
+function deleteEntryHandlerClick() {
+    var param = $('#confirmationModal #hiddenField1').prop("value");
+    var value = $('#confirmationModal #hiddenField2').prop("value");
+    var jqxhr = $.post("DeleteInvariant2", {idName:param,value:value}, "json");
+    $.when(jqxhr).then(function (data) {
+        console.log(data);
+        console.log(data.messageType);
+        var messageType = getAlertType(data.messageType);
+        console.log(messageType);
+        if (messageType === "success") {
+            //redraw the datatable
+            var oTable = $("#invariantsTable").dataTable();
+            oTable.fnDraw(true);
+            var info = oTable.fnGetData().length;
+
+            if (info === 1) {//page has only one row, then returns to the previous page
+                oTable.fnPageChange('previous');
+            }
+        }
+        //show message in the main page
+        showMessageMainPage(messageType, data.message);
+        //close confirmation window
         $('#confirmationModal').modal('hide');
-    }, doc.getDocLabel("page_invariant", "title_remove") , doc.getDocLabel("page_invariant", "message_remove"), param, value, undefined, undefined);
+    }).fail(handleErrorAjaxAfterTimeout);
 }
 function editEntryModalSaveHandler() {
     clearResponseMessage($('#editInvariantModal'));
@@ -247,7 +253,7 @@ function editEntryModalSaveHandler() {
                 oTable.fnDraw(true);
                 $('#editInvariantModal').modal('hide');
                 showMessage(data);
-            }else{
+            } else {
                 showMessage(data, $('#editInvariantModal'));
             }
         },
@@ -289,7 +295,7 @@ function addEntryModalSaveHandler() {
                 oTable.fnDraw(true);
                 $('#addInvariantModal').modal('hide');
                 showMessage(data);
-            }else{
+            } else {
                 showMessage(data, $('#addInvariantModal'));
             }
         },

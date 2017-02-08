@@ -23,7 +23,36 @@
                         $("#ActiveUsers").append("<li>"+ v + "</li>");
                     });
                     $.each(data.simultaneous_execution_list, function (a, v){
-                        $("#ExecutionList").append("<li>[<a href='./ExecutionDetail2.jsp?executionId="+ v.id + "'>"+ v.id + "</a>] : " + v.test + " " +v.testcase + "</li>");
+                        function getParameter(param,sys,forceReload){
+                            var result;
+                            var cacheEntryName = "PARAMETER_"+param;
+                            if (forceReload) {
+                                sessionStorage.removeItem(cacheEntryName);
+                            }
+                            var system = sys!=undefined?"&system="+sys:"";
+                            var parameter = JSON.parse(sessionStorage.getItem(cacheEntryName));
+                            if(parameter === null){
+                                $.ajax({
+                                    url: "ReadParameter?param="+param+system,
+                                    data: {},
+                                    async: false,
+                                    success: function (data) {
+                                        sessionStorage.setItem(cacheEntryName,JSON.stringify(data.contentTable))
+                                        result = data.contentTable;
+                                    }
+                                });
+                            }else{
+                                result = parameter;
+                            }
+                            return result;
+                        }
+
+                        var data = getParameter("cerberus_executiondetail_use");
+                        if(data.value == "N"){
+                            $("#ExecutionList").append("<li>[<a href='./ExecutionDetail.jsp?id_tc="+ v.id + "'>"+ v.id + "</a>] : " + v.test + " " +v.testcase + "</li>");
+                        }else{
+                            $("#ExecutionList").append("<li>[<a href='./ExecutionDetail2.jsp?executionId="+ v.id + "'>"+ v.id + "</a>] : " + v.test + " " +v.testcase + "</li>");
+                        }
                     });
                     
                 });

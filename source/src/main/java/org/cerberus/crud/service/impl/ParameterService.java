@@ -19,29 +19,25 @@
  */
 package org.cerberus.crud.service.impl;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.log4j.Logger;
-import org.apache.xmlbeans.impl.tool.Extension;
 import org.cerberus.crud.dao.IParameterDAO;
-import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Parameter;
+import org.cerberus.crud.service.IParameterService;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.crud.service.IParameterService;
+import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 import org.cerberus.util.answer.AnswerUtil;
-import org.cerberus.version.Infos;
+import org.cerberus.util.observe.ObservableEngine;
+import org.cerberus.util.observe.Observer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author bcivel
@@ -52,13 +48,13 @@ public class ParameterService implements IParameterService {
     @Autowired
     private IParameterDAO parameterDao;
 
-    private Map<String, Set<ParameterAware>> propertyRegistration;
+    @Autowired
+    private ObservableEngine<String, Parameter> observableEngine;
 
     private static final Logger LOG = Logger.getLogger(ParameterService.class);
 
     @Override
     public Parameter findParameterByKey(String key, String system) throws CerberusException {
-        String logPrefix = Infos.getInstance().getProjectNameAndVersion() + " - ";
         Parameter myParameter;
         /**
          * We try to get the parameter using the system parameter but if it does
@@ -66,13 +62,13 @@ public class ParameterService implements IParameterService {
          * default global Cerberus Parameter.
          */
         try {
-            LOG.debug(logPrefix + "Trying to retrieve parameter : " + key + " - [" + system + "]");
+            LOG.debug("Trying to retrieve parameter : " + key + " - [" + system + "]");
             myParameter = parameterDao.findParameterByKey(system, key);
             if (myParameter != null && myParameter.getValue().equalsIgnoreCase("")) {
                 myParameter = parameterDao.findParameterByKey("", key);
             }
         } catch (CerberusException ex) {
-            LOG.debug(logPrefix + "Trying to retrieve parameter : " + key + " - []");
+            LOG.debug("Trying to retrieve parameter (default value) : " + key + " - []");
             myParameter = parameterDao.findParameterByKey("", key);
             return myParameter;
         }
@@ -80,13 +76,65 @@ public class ParameterService implements IParameterService {
     }
 
     @Override
-    public Integer getParameterByKey(String key, String system, Integer defaultValue) {
+    public boolean getParameterBooleanByKey(String key, String system, boolean defaultValue) {
+        Parameter myParameter;
+        boolean outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = StringUtil.parseBoolean(myParameter.getValue());
+        } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        return outPutResult;
+    }
+
+    @Override
+    public Integer getParameterIntegerByKey(String key, String system, Integer defaultValue) {
         Parameter myParameter;
         Integer outPutResult = defaultValue;
         try {
             myParameter = this.findParameterByKey(key, system);
             outPutResult = Integer.valueOf(myParameter.getValue());
         } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        return outPutResult;
+    }
+
+    @Override
+    public long getParameterLongByKey(String key, String system, long defaultValue) {
+        Parameter myParameter;
+        long outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = Long.parseLong(myParameter.getValue());
+        } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        return outPutResult;
+    }
+
+    @Override
+    public float getParameterFloatByKey(String key, String system, float defaultValue) {
+        Parameter myParameter;
+        float outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = Float.valueOf(myParameter.getValue());
+        } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        return outPutResult;
+    }
+
+    @Override
+    public String getParameterStringByKey(String key, String system, String defaultValue) {
+        Parameter myParameter;
+        String outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = myParameter.getValue();
+        } catch (CerberusException ex) {
             LOG.error(ex);
         }
         return outPutResult;
@@ -100,13 +148,13 @@ public class ParameterService implements IParameterService {
     @Override
     public void updateParameter(Parameter parameter) throws CerberusException {
         parameterDao.updateParameter(parameter);
-        firePropertyChange(parameter);
+        fireUpdate(parameter.getParam(), parameter);
     }
 
     @Override
     public void insertParameter(Parameter parameter) throws CerberusException {
         parameterDao.insertParameter(parameter);
-        firePropertyChange(parameter);
+        fireCreate(parameter.getParam(), parameter);
     }
 
     @Override
@@ -125,45 +173,6 @@ public class ParameterService implements IParameterService {
             insertParameter(parameter);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Parameter Inserted");
-            }
-        }
-    }
-
-    @Override
-    public void register(String key, ParameterAware parameterAware) {
-        synchronized (propertyRegistration) {
-            Set<ParameterAware> existingRegistration = propertyRegistration.get(key);
-            if (existingRegistration == null) {
-                existingRegistration = new HashSet<>();
-            }
-            existingRegistration.add(parameterAware);
-            propertyRegistration.put(key, existingRegistration);
-        }
-    }
-
-    @Override
-    public void unregister(String key, ParameterAware parameterAware) {
-        synchronized (propertyRegistration) {
-            Set<ParameterAware> existingRegistration = propertyRegistration.get(key);
-            if (existingRegistration != null) {
-                existingRegistration.remove(parameterAware);
-            }
-        }
-    }
-
-    @PostConstruct
-    private void init() {
-        propertyRegistration = new HashMap<>();
-    }
-
-    private void firePropertyChange(Parameter parameter) {
-        Set<ParameterAware> existingRegistration;
-        synchronized (propertyRegistration) {
-            existingRegistration = propertyRegistration.get(parameter.getParam());
-        }
-        if (existingRegistration != null) {
-            for (ParameterAware parameterAware : existingRegistration) {
-                parameterAware.parameterChanged(parameter);
             }
         }
     }
@@ -195,40 +204,86 @@ public class ParameterService implements IParameterService {
 
     @Override
     public Answer create(Parameter object) {
-        return parameterDao.create(object);
+        Answer answer = parameterDao.create(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireCreate(object.getParam(), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer update(Parameter object) {
-        return parameterDao.update(object);
+        Answer answer = parameterDao.update(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireUpdate(object.getParam(), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer delete(Parameter object) {
-        return parameterDao.delete(object);
+        Answer answer = parameterDao.delete(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getCode())) {
+            fireDelete(object.getParam(), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer save(Parameter object) {
         Answer finalAnswer = new Answer();
         AnswerItem resp = readByKey(object.getSystem(), object.getParam());
-        if (!resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+        if (!MessageEventEnum.DATA_OPERATION_OK.equals(resp.getResultMessage().getSource())) {
             /**
              * Object could not be found. We stop here and report the error.
              */
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) resp);
         } else if (resp.getItem() == null) {
             finalAnswer = create(object);
+        } else if (!((object.getValue()).equals(((Parameter) resp.getItem()).getValue()))) {
+            finalAnswer = update(object);
         } else {
-            if(!((object.getValue()).equals(((Parameter)resp.getItem()).getValue()))) {
-                finalAnswer = update(object);
-            }else{
-                /**
-                 * Nothing is done but everything went OK
-                 */
-                finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED));
-            }
+            /**
+             * Nothing is done but everything went OK
+             */
+            finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED));
         }
         return finalAnswer;
     }
+
+    @Override
+    public boolean register(Observer<String, Parameter> observer) {
+        return observableEngine.register(observer);
+    }
+
+    @Override
+    public boolean register(String topic, Observer<String, Parameter> observer) {
+        return observableEngine.register(topic, observer);
+    }
+
+    @Override
+    public boolean unregister(String topic, Observer<String, Parameter> observer) {
+        return observableEngine.unregister(topic, observer);
+    }
+
+    @Override
+    public boolean unregister(Observer<String, Parameter> observer) {
+        return observableEngine.unregister(observer);
+    }
+
+    @Override
+    public void fireCreate(String topic, Parameter parameter) {
+        observableEngine.fireCreate(topic, parameter);
+    }
+
+    @Override
+    public void fireUpdate(String topic, Parameter parameter) {
+        observableEngine.fireUpdate(topic, parameter);
+    }
+
+    @Override
+    public void fireDelete(String topic, Parameter parameter) {
+        observableEngine.fireDelete(topic, parameter);
+    }
+
 }

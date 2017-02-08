@@ -2132,6 +2132,12 @@ function addTCSACNew(rowID, step, incrementAction, obj) {
         .attr('name', 'control_value2_' + step + '_' + incrementAction + '_' + nextIncControl);
     $('#StepListOfControlDiv' + step + incrementAction + nextIncControl).find('#control_fatal_template')
             .attr('name', 'control_fatal_' + step + '_' + incrementAction + '_' + nextIncControl);
+    $('#StepListOfControlDiv' + step + incrementAction + nextIncControl).find('#control_conditionoper_template')
+            .attr('name', 'control_conditionoper_' + step + '_' + incrementAction + '_' + nextIncControl);
+    $('#StepListOfControlDiv' + step + incrementAction + nextIncControl).find('input[data-id="control_conditionval1_template"]')
+            .attr('name', 'control_conditionval1_' + step + '_' + incrementAction + '_' + nextIncControl);
+    $('#StepListOfControlDiv' + step + incrementAction + nextIncControl).find('input[data-id="control_conditionval2_template"]')
+            .attr('name', 'control_conditionval2_' + step + '_' + incrementAction + '_' + nextIncControl);
 
     callEvent();
 }
@@ -2246,6 +2252,12 @@ function addTCSCNew(rowID, obj) {
             .attr('name', 'step_description_' + nextIncStep).attr('data-fieldtype', 'Description')
             .attr('id', 'step_description_' + nextIncStep)
             .attr('placeholder', 'Description');
+    $('#StepFirstLineDiv' + nextIncStep).find('#step_conditionoper_template')
+            .attr('name', 'step_conditionoper_' + nextIncStep);
+    $('#StepFirstLineDiv' + nextIncStep).find('#step_conditionval1_template')
+            .attr('name', 'step_conditionval1_' + nextIncStep);
+    $('#StepFirstLineDiv' + nextIncStep).find('#step_conditionval2_template')
+            .attr('name', 'step_conditionval2_' + nextIncStep);
     $('#StepFirstLineDiv' + nextIncStep).find('input[data-id="initial_step_number_template"]')
             .attr('name', 'initial_step_number_' + nextIncStep).val(nextIncStep);
     $('#StepFirstLineDiv' + nextIncStep).find('input[data-id="step_useStep_template"]')
@@ -2449,7 +2461,12 @@ function openChangeTagPopin(value) {
                     var deferred = $.get("./SetTagToExecution", {executionId: id, newTag: tag});
 
                     deferred.success(function () {
-                        $(location).attr('href', "./ExecutionDetail2.jsp?executionId=" + value);
+                        var data = getParameter("cerberus_executiondetail_use");
+                        if(data.value == "N"){
+                            $(location).attr('href', "./ExecutionDetail.jsp?id_tc=" + value);
+                        }else{
+                            $(location).attr('href', "./ExecutionDetail2.jsp?executionId=" + value);
+                        }
                     });
 
 //
@@ -2459,6 +2476,30 @@ function openChangeTagPopin(value) {
                     $(this).dialog("close");
                 }}
         ]});
+}
+
+function getParameter(param,sys,forceReload){
+    var result;
+    var cacheEntryName = "PARAMETER_"+param;
+    if (forceReload) {
+        sessionStorage.removeItem(cacheEntryName);
+    }
+    var system = sys!=undefined?"&system="+sys:"";
+    var parameter = JSON.parse(sessionStorage.getItem(cacheEntryName));
+    if(parameter === null){
+        $.ajax({
+            url: "ReadParameter?param="+param+system,
+            data: {},
+            async: false,
+            success: function (data) {
+                sessionStorage.setItem(cacheEntryName,JSON.stringify(data.contentTable))
+                result = data.contentTable;
+            }
+        });
+    }else{
+        result = parameter;
+    }
+    return result;
 }
 
 function loadChangeTagPopin(value) {

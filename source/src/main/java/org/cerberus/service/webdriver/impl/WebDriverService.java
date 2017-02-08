@@ -262,6 +262,19 @@ public class WebDriverService implements IWebDriverService {
     }
 
     @Override
+    public boolean isElementNotPresent(Session session, Identifier identifier) {
+        By locator = this.getBy(identifier);
+        MyLogger.log(WebDriverService.class.getName(), Level.DEBUG, "Waiting for Element to be not present : " + identifier.getIdentifier() + "=" + identifier.getLocator());
+        try {
+            WebDriverWait wait = new WebDriverWait(session.getDriver(), TimeUnit.MILLISECONDS.toSeconds(session.getCerberus_selenium_wait_element()));
+            return wait.until(ExpectedConditions.not(ExpectedConditions.presenceOfElementLocated(locator)));
+        } catch (TimeoutException exception) {
+            MyLogger.log(WebDriverService.class.getName(), Level.FATAL, "Exception waiting for element to be not present :" + exception);
+            return false;
+        }
+    }
+
+    @Override
     public boolean isElementVisible(Session session, Identifier identifier) {
         try {
             AnswerItem answer = this.getSeleniumElement(session, identifier, true, false);
@@ -278,22 +291,15 @@ public class WebDriverService implements IWebDriverService {
 
     @Override
     public boolean isElementNotVisible(Session session, Identifier identifier) {
+        By locator = this.getBy(identifier);
+        MyLogger.log(WebDriverService.class.getName(), Level.DEBUG, "Waiting for Element to be not visible : " + identifier.getIdentifier() + "=" + identifier.getLocator());
         try {
-            AnswerItem answer = this.getSeleniumElement(session, identifier, false, false);
-            if (answer.isCodeEquals(MessageEventEnum.ACTION_SUCCESS_WAIT_ELEMENT.getCode())) {
-                WebElement webElement = (WebElement) answer.getItem();
-
-                return webElement != null && !webElement.isDisplayed();
-            } else if (answer.isCodeEquals(MessageEventEnum.ACTION_FAILED_WAIT_NO_SUCH_ELEMENT.getCode())) {
-                /**
-                 * Return true if element not found (not found >> not visible)
-                 */
-                return true;
-            }
-        } catch (NoSuchElementException exception) {
-            MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
+            WebDriverWait wait = new WebDriverWait(session.getDriver(), TimeUnit.MILLISECONDS.toSeconds(session.getCerberus_selenium_wait_element()));
+            return wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
+        } catch (TimeoutException exception) {
+            MyLogger.log(WebDriverService.class.getName(), Level.FATAL, "Exception waiting for element to be not visible :" + exception);
+            return false;
         }
-        return false;
     }
 
     @Override
@@ -405,17 +411,15 @@ public class WebDriverService implements IWebDriverService {
 
     @Override
     public boolean isElementNotClickable(Session session, Identifier identifier) {
+        By locator = this.getBy(identifier);
+        MyLogger.log(WebDriverService.class.getName(), Level.DEBUG, "Waiting for Element to be not clickable : " + identifier.getIdentifier() + "=" + identifier.getLocator());
         try {
-            AnswerItem answer = this.getSeleniumElement(session, identifier, true, true);
-            if (answer.isCodeEquals(MessageEventEnum.ACTION_SUCCESS_WAIT_ELEMENT.getCode())) {
-                WebElement webElement = (WebElement) answer.getItem();
-
-                return webElement == null;
-            }
-        } catch (NoSuchElementException exception) {
-            MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
+            WebDriverWait wait = new WebDriverWait(session.getDriver(), TimeUnit.MILLISECONDS.toSeconds(session.getCerberus_selenium_wait_element()));
+            return wait.until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(locator)));
+        } catch (TimeoutException exception) {
+            MyLogger.log(WebDriverService.class.getName(), Level.FATAL, "Exception waiting for element to be not clickable :" + exception);
+            return false;
         }
-        return false;
     }
 
     @Override
@@ -461,9 +465,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
 
     }
@@ -498,9 +501,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
     }
 
@@ -533,9 +535,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
     }
 
@@ -578,9 +579,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
         message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SWITCHTOWINDOW_NO_SUCH_ELEMENT);
         message.setDescription(message.getDescription().replace("%WINDOW%", windowTitle));
@@ -611,6 +611,7 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
         } catch (WebDriverException exception) {
             MyLogger.log(WebDriverService.class.getName(), Level.DEBUG, "Alert popup is closed ? " + exception.toString());
+            return parseWebDriverException(exception);
         }
         return new MessageEvent(MessageEventEnum.ACTION_FAILED_CLOSE_ALERT);
     }
@@ -660,9 +661,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
     }
 
@@ -700,9 +700,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
     }
 
@@ -735,9 +734,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
     }
 
@@ -756,9 +754,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.DEBUG, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
     }
 
@@ -823,8 +820,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
 
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
+            return parseWebDriverException(exception);
 
         }
         return message;
@@ -838,7 +835,7 @@ public class WebDriverService implements IWebDriverService {
             if (!StringUtil.isNull(identifier.getLocator())) {
                 if (withBase) {
                     host = StringUtil.cleanHostURL(host);
-                    url = host + identifier.getLocator();
+                    url = StringUtil.getURLFromString(host, "", identifier.getLocator(), "");
                 } else {
                     url = StringUtil.cleanHostURL(identifier.getLocator());
                 }
@@ -856,8 +853,8 @@ public class WebDriverService implements IWebDriverService {
             message.setDescription(message.getDescription().replace("%URL%", url));
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
+            return parseWebDriverException(exception);
         }
 
         return message;
@@ -908,7 +905,7 @@ public class WebDriverService implements IWebDriverService {
                 select.selectByValue(property.getLocator());
             } else if (property.getIdentifier().equalsIgnoreCase("label")) {
                 select.selectByVisibleText(property.getLocator());
-            } else if (property.getIdentifier().equalsIgnoreCase("index") && StringUtil.isNumeric(property.getLocator())) {
+            } else if (property.getIdentifier().equalsIgnoreCase("index") && StringUtil.isInteger(property.getLocator())) {
                 select.selectByIndex(Integer.parseInt(property.getLocator()));
             } else if (property.getIdentifier().equalsIgnoreCase("regexValue")
                     || property.getIdentifier().equalsIgnoreCase("regexIndex")
@@ -933,7 +930,7 @@ public class WebDriverService implements IWebDriverService {
                             select.selectByVisibleText(optionLabel);
                         }
                     }
-                } else if (property.getIdentifier().equalsIgnoreCase("regexIndex") && StringUtil.isNumeric(property.getLocator())) {
+                } else if (property.getIdentifier().equalsIgnoreCase("regexIndex") && StringUtil.isInteger(property.getLocator())) {
                     for (WebElement option : list) {
                         Integer id = 0;
                         Pattern pattern = Pattern.compile(property.getLocator());
@@ -957,6 +954,7 @@ public class WebDriverService implements IWebDriverService {
             throw new CerberusEventException(message);
         } catch (WebDriverException exception) {
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
+            message.setDescription(message.getDescription().replace("%ERROR%", exception.getMessage().split("\n")[0]));
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
             throw new CerberusEventException(message);
         } catch (PatternSyntaxException e) {
@@ -972,7 +970,7 @@ public class WebDriverService implements IWebDriverService {
         MessageEvent message;
 
         host = StringUtil.cleanHostURL(host);
-        String url = host + (host.endsWith("/") ? uri.replace("/", "") : uri);
+        String url = StringUtil.getURLFromString(host, "", uri, "");
 
         try {
             session.getDriver().get(url);
@@ -1007,8 +1005,8 @@ public class WebDriverService implements IWebDriverService {
                 }
 
             }
-
             return answer.getResultMessage();
+
         } catch (NoSuchElementException exception) {
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_FOCUS_NO_SUCH_ELEMENT);
             message.setDescription(message.getDescription().replace("%IFRAME%", identifier.getIdentifier() + "=" + identifier.getLocator()));
@@ -1019,11 +1017,8 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
-            MyLogger
-                    .log(WebDriverService.class
-                            .getName(), Level.FATAL, exception.toString());
-
+            MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
+            return parseWebDriverException(exception);
         }
         return message;
     }
@@ -1036,9 +1031,8 @@ public class WebDriverService implements IWebDriverService {
             session.getDriver().switchTo().defaultContent();
             message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_FOCUSDEFAULTIFRAME);
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
 
         return message;
@@ -1120,10 +1114,22 @@ public class WebDriverService implements IWebDriverService {
             MyLogger.log(WebDriverService.class.getName(), Level.WARN, exception.toString());
             return message;
         } catch (WebDriverException exception) {
-            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
             MyLogger.log(WebDriverService.class.getName(), Level.FATAL, exception.toString());
-            return message;
+            return parseWebDriverException(exception);
         }
+    }
+
+    /**
+     * @author vertigo17
+     * @param exception the exception need to be parsed by Cerberus
+     * @return A new Event Message with selenium related description
+     */
+    private MessageEvent parseWebDriverException(WebDriverException exception) {
+        MessageEvent mes;
+        LOG.fatal(exception.toString());
+        mes = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELENIUM_CONNECTIVITY);
+        mes.setDescription(mes.getDescription().replace("%ERROR%", exception.getMessage().split("\n")[0]));
+        return mes;
     }
 
 }

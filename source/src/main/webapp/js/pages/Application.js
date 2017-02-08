@@ -95,6 +95,7 @@ function displayPageLabel() {
             + '<br>' + doc.getDocOnline("countryenvironmentparameters", "Var2"));
     $("#var3Header").html(doc.getDocOnline("countryenvironmentparameters", "Var3") 
             + '<br>' + doc.getDocOnline("countryenvironmentparameters", "Var4"));
+    $("#poolSizeHeader").html(doc.getDocOnline("countryenvironmentparameters", "poolSize"));
 
     displayInvariantList("system", "SYSTEM", false);
     displayInvariantList("type", "APPLITYPE", false);
@@ -162,7 +163,7 @@ function addEntryModalSaveHandler() {
     clearResponseMessage($('#addApplicationModal'));
     var formAdd = $("#addApplicationModal #addApplicationModalForm");
 
-    var nameElement = formAdd.find("#addApplicationModalForm");
+    var nameElement = formAdd.find("#application");
     var nameElementEmpty = nameElement.prop("value") === '';
     if (nameElementEmpty) {
         var localMessage = new Message("danger", "Please specify the name of the application!");
@@ -172,8 +173,18 @@ function addEntryModalSaveHandler() {
         nameElement.parents("div.form-group").removeClass("has-error");
     }
 
+    var deployTypeElement = formAdd.find("#deploytype");
+    var deployTypeElementEmpty = deployTypeElement.prop("value") === '';
+    if (deployTypeElementEmpty) {
+        var localMessage = new Message("danger", "Please specify the Deploy Type! If necessary create at least one Deploy Type in the corresponding screen under Application menu.");
+        deployTypeElement.parents("div.form-group").addClass("has-error");
+        showMessage(localMessage, $('#addApplicationModal'));
+    } else {
+        deployTypeElement.parents("div.form-group").removeClass("has-error");
+    }
+    
     // verif if all mendatory fields are not empty
-    if (nameElementEmpty)
+    if ((nameElementEmpty) || (deployTypeElementEmpty))
         return;
 
     // Get the header data from the form.
@@ -346,6 +357,7 @@ function appendEnvironmentRow(env) {
     var var2Input = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "var2") + " --\">").addClass("form-control input-sm").val(env.var2);
     var var3Input = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "var3") + " --\">").addClass("form-control input-sm").val(env.var3);
     var var4Input = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "var4") + " --\">").addClass("form-control input-sm").val(env.var4);
+    var poolSizeInput = $("<input  maxlength=\"150\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "poolSize") + " --\">").addClass("form-control input-sm").val(env.poolSize);
     var table = $("#environmentTableBody");
 
     var row = $("<tr></tr>");
@@ -357,6 +369,7 @@ function appendEnvironmentRow(env) {
     var urlName = $("<td></td>").append(urlInput).append(domainInput);
     var var1Name = $("<td></td>").append(var1Input).append(var2Input);
     var var3Name = $("<td></td>").append(var3Input).append(var4Input);
+    var poolSize = $("<td></td>").append(poolSizeInput);
     deleteBtn.click(function () {
         env.toDelete = (env.toDelete) ? false : true;
         if (env.toDelete) {
@@ -395,6 +408,9 @@ function appendEnvironmentRow(env) {
     var4Input.change(function () {
         env.var4 = $(this).val();
     });
+    poolSizeInput.change(function () {
+        env.poolSize = $(this).val();
+    });
     row.append(deleteBtnRow);
     row.append(environment);
     row.append(country);
@@ -402,6 +418,7 @@ function appendEnvironmentRow(env) {
     row.append(urlName);
     row.append(var1Name);
     row.append(var3Name);
+    row.append(poolSize);
     env.environment = selectEnvironment.prop("value"); // Value that has been requested by dtb parameter may not exist in combo vlaues so we take the real selected value.
     env.country = selectCountry.prop("value"); // Value that has been requested by dtb parameter may not exist in combo vlaues so we take the real selected value.
     row.data("environment", env);
@@ -420,6 +437,7 @@ function addNewEnvironmentRow() {
         var2: "",
         var3: "",
         var4: "",
+        poolSize: "",
         toDelete: false
     };
     appendEnvironmentRow(newEnvironment);

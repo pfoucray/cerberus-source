@@ -19,9 +19,6 @@ package org.cerberus.crud.dao.impl;
 
 import com.google.common.base.Strings;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +36,6 @@ import org.apache.log4j.Logger;
 import org.cerberus.crud.dao.IApplicationDAO;
 import org.cerberus.crud.dao.ITestCaseDAO;
 import org.cerberus.crud.dao.ITestCaseExecutionDAO;
-import org.cerberus.crud.entity.Parameter;
 import org.cerberus.crud.service.IParameterService;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.MessageGeneral;
@@ -49,6 +46,7 @@ import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.log.MyLogger;
+import org.cerberus.util.DateUtil;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SqlUtil;
 import org.cerberus.util.StringUtil;
@@ -57,21 +55,9 @@ import org.cerberus.util.answer.AnswerList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.imageio.ImageIO;
-
-/**
- * {Insert class description here}
- *
- * @author Tiago Bernardes
- * @version 1.0, 02/01/2013
- * @since 2.0.0
- */
 @Repository
 public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
 
-    /**
-     * Description of the variable here.
-     */
     @Autowired
     private DatabaseSpring databaseSpring;
     @Autowired
@@ -91,36 +77,45 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
     @Override
     public long insertTCExecution(TestCaseExecution tCExecution) throws CerberusException {
         boolean throwEx = false;
-        final String query = "INSERT INTO testcaseexecution(test, testcase, build, revision, environment, country, browser, application, ip, "
-                + "url, port, tag, verbose, status, start, controlstatus, controlMessage, crbversion, finished, browserFullVersion, executor, screensize) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        final String query = "INSERT INTO testcaseexecution(test, testcase, build, revision, environment, environmentData, country, browser, application, ip, "
+                + "url, port, tag, verbose, status, start, controlstatus, controlMessage, crbversion, finished, browserFullVersion, executor, screensize,"
+                + "conditionOper, conditionVal1Init, conditionVal2Init, conditionVal1, conditionVal2, manualExecution) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             try {
-                preStat.setString(1, tCExecution.getTest());
-                preStat.setString(2, tCExecution.getTestCase());
-                preStat.setString(3, tCExecution.getBuild());
-                preStat.setString(4, tCExecution.getRevision());
-                preStat.setString(5, tCExecution.getEnvironment());
-                preStat.setString(6, tCExecution.getCountry());
-                preStat.setString(7, tCExecution.getBrowser());
-                preStat.setString(8, tCExecution.getApplicationObj().getApplication());
-                preStat.setString(9, tCExecution.getIp());
-                preStat.setString(10, tCExecution.getUrl());
-                preStat.setString(11, tCExecution.getPort());
-                preStat.setString(12, tCExecution.getTag());
-                preStat.setInt(13, tCExecution.getVerbose());
-                preStat.setString(14, tCExecution.getStatus());
-                preStat.setTimestamp(15, new Timestamp(tCExecution.getStart()));
-                preStat.setString(16, tCExecution.getControlStatus());
-                preStat.setString(17, StringUtil.getLeftString(tCExecution.getControlMessage(), 500));
-                preStat.setString(18, tCExecution.getCrbVersion());
-                preStat.setString(19, tCExecution.getFinished());
-                preStat.setString(20, tCExecution.getBrowserFullVersion());
-                preStat.setString(21, tCExecution.getExecutor());
-                preStat.setString(22, tCExecution.getScreenSize());
+                int i=1;
+                preStat.setString(i++, tCExecution.getTest());
+                preStat.setString(i++, tCExecution.getTestCase());
+                preStat.setString(i++, tCExecution.getBuild());
+                preStat.setString(i++, tCExecution.getRevision());
+                preStat.setString(i++, tCExecution.getEnvironment());
+                preStat.setString(i++, tCExecution.getEnvironmentData());
+                preStat.setString(i++, tCExecution.getCountry());
+                preStat.setString(i++, tCExecution.getBrowser());
+                preStat.setString(i++, tCExecution.getApplicationObj().getApplication());
+                preStat.setString(i++, tCExecution.getIp());
+                preStat.setString(i++, tCExecution.getUrl());
+                preStat.setString(i++, tCExecution.getPort());
+                preStat.setString(i++, tCExecution.getTag());
+                preStat.setInt(i++, tCExecution.getVerbose());
+                preStat.setString(i++, tCExecution.getStatus());
+                preStat.setTimestamp(i++, new Timestamp(tCExecution.getStart()));
+                preStat.setString(i++, tCExecution.getControlStatus());
+                preStat.setString(i++, StringUtil.getLeftString(tCExecution.getControlMessage(), 500));
+                preStat.setString(i++, tCExecution.getCrbVersion());
+                preStat.setString(i++, tCExecution.getFinished());
+                preStat.setString(i++, tCExecution.getBrowserFullVersion());
+                preStat.setString(i++, tCExecution.getExecutor());
+                preStat.setString(i++, tCExecution.getScreenSize());
+                preStat.setString(i++, tCExecution.getConditionOper());
+                preStat.setString(i++, tCExecution.getConditionVal1Init());
+                preStat.setString(i++, tCExecution.getConditionVal2Init());
+                preStat.setString(i++, tCExecution.getConditionVal1());
+                preStat.setString(i++, tCExecution.getConditionVal2());
+                preStat.setString(i++, tCExecution.isManualExecution()?"Y":"N");
 
                 preStat.executeUpdate();
                 ResultSet resultSet = preStat.getGeneratedKeys();
@@ -162,45 +157,54 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
     @Override
     public void updateTCExecution(TestCaseExecution tCExecution) throws CerberusException {
         boolean throwEx = false;
-        final String query = "UPDATE testcaseexecution SET test = ?, testcase = ?, build = ?, revision = ?, environment = ?, country = ?"
+        final String query = "UPDATE testcaseexecution SET test = ?, testcase = ?, build = ?, revision = ?, environment = ?, environmentData = ?, country = ?"
                 + ", browser = ?, application = ?, ip = ?, url = ?, port = ?, tag = ?, verbose = ?, status = ?"
                 + ", start = ?, end = ? , controlstatus = ?, controlMessage = ?, crbversion = ?, finished = ? "
-                + ", browserFullVersion = ?, version = ?, platform = ?, executor = ?, screensize = ? WHERE id = ?";
+                + ", browserFullVersion = ?, version = ?, platform = ?, executor = ?, screensize = ? "
+                + ", ConditionOper = ?, ConditionVal1Init = ?, ConditionVal2Init = ?, ConditionVal1 = ?, ConditionVal2 = ?, ManualExecution = ? WHERE id = ?";
 
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
-                preStat.setString(1, tCExecution.getTest());
-                preStat.setString(2, tCExecution.getTestCase());
-                preStat.setString(3, tCExecution.getBuild());
-                preStat.setString(4, tCExecution.getRevision());
-                preStat.setString(5, tCExecution.getEnvironment());
-                preStat.setString(6, tCExecution.getCountry());
-                preStat.setString(7, tCExecution.getBrowser());
-                preStat.setString(8, tCExecution.getApplicationObj().getApplication());
-                preStat.setString(9, tCExecution.getIp());
-                preStat.setString(10, tCExecution.getUrl());
-                preStat.setString(11, tCExecution.getPort());
-                preStat.setString(12, tCExecution.getTag());
-                preStat.setInt(13, tCExecution.getVerbose());
-                preStat.setString(14, tCExecution.getStatus());
-                preStat.setTimestamp(15, new Timestamp(tCExecution.getStart()));
+                int i=1;
+                preStat.setString(i++, tCExecution.getTest());
+                preStat.setString(i++, tCExecution.getTestCase());
+                preStat.setString(i++, tCExecution.getBuild());
+                preStat.setString(i++, tCExecution.getRevision());
+                preStat.setString(i++, tCExecution.getEnvironment());
+                preStat.setString(i++, tCExecution.getEnvironmentData());
+                preStat.setString(i++, tCExecution.getCountry());
+                preStat.setString(i++, tCExecution.getBrowser());
+                preStat.setString(i++, tCExecution.getApplicationObj().getApplication());
+                preStat.setString(i++, tCExecution.getIp());
+                preStat.setString(i++, tCExecution.getUrl());
+                preStat.setString(i++, tCExecution.getPort());
+                preStat.setString(i++, tCExecution.getTag());
+                preStat.setInt(i++, tCExecution.getVerbose());
+                preStat.setString(i++, tCExecution.getStatus());
+                preStat.setTimestamp(i++, new Timestamp(tCExecution.getStart()));
                 if (tCExecution.getEnd() != 0) {
-                    preStat.setTimestamp(16, new Timestamp(tCExecution.getEnd()));
+                    preStat.setTimestamp(i++, new Timestamp(tCExecution.getEnd()));
                 } else {
-                    preStat.setString(16, "1970-01-01 01:01:01");
+                    preStat.setString(i++, "1970-01-01 01:01:01");
                 }
-                preStat.setString(17, tCExecution.getControlStatus());
-                preStat.setString(18, StringUtil.getLeftString(tCExecution.getControlMessage(), 500));
-                preStat.setString(19, tCExecution.getCrbVersion());
-                preStat.setString(20, tCExecution.getFinished());
-                preStat.setString(21, tCExecution.getBrowserFullVersion());
-                preStat.setString(22, tCExecution.getVersion());
-                preStat.setString(23, tCExecution.getPlatform());
-                preStat.setString(24, tCExecution.getExecutor());
-                preStat.setString(25, tCExecution.getScreenSize());
-                preStat.setLong(26, tCExecution.getId());
+                preStat.setString(i++, tCExecution.getControlStatus());
+                preStat.setString(i++, StringUtil.getLeftString(tCExecution.getControlMessage(), 500));
+                preStat.setString(i++, tCExecution.getCrbVersion());
+                preStat.setString(i++, tCExecution.getFinished());
+                preStat.setString(i++, tCExecution.getBrowserFullVersion());
+                preStat.setString(i++, tCExecution.getVersion());
+                preStat.setString(i++, tCExecution.getPlatform());
+                preStat.setString(i++, tCExecution.getExecutor());
+                preStat.setString(i++, tCExecution.getScreenSize());
+                preStat.setString(i++, tCExecution.getConditionOper());
+                preStat.setString(i++, tCExecution.getConditionVal1Init());
+                preStat.setString(i++, tCExecution.getConditionVal2Init());
+                preStat.setString(i++, tCExecution.getConditionVal1());
+                preStat.setString(i++, tCExecution.getConditionVal2());
+                preStat.setString(i++, tCExecution.isManualExecution()?"Y":"N");
+                preStat.setLong(i++, tCExecution.getId());
 
                 preStat.executeUpdate();
             } catch (SQLException exception) {
@@ -463,7 +467,7 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
         TestCaseExecution Execution;
         boolean throwException = false;
         final String query = new StringBuffer("SELECT exe.*, tec.*, app.* FROM testcaseexecution exe ")
-                .append("LEFT JOIN testcase tec ON exe.test = exe.test AND exe.testcase = tec.testcase ")
+                .append("LEFT JOIN testcase tec ON exe.test = tec.test AND exe.testcase = tec.testcase ")
                 .append("LEFT JOIN application app ON exe.application = app.application ")
                 .append("WHERE exe.start > ? AND exe.test LIKE ? AND exe.testcase LIKE ? AND exe.environment LIKE ? ")
                 .append("AND exe.country LIKE ? AND exe.application LIKE ? AND exe.controlstatus LIKE ? ")
@@ -968,6 +972,7 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
+            LOG.debug("SQL.param.tag : " + tag);
         }
         List<TestCaseExecution> testCaseExecutionList = new ArrayList<TestCaseExecution>();
         Connection connection = this.databaseSpring.connect();
@@ -996,7 +1001,8 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
                         testCaseExecutionList.add(this.loadWithDependenciesFromResultSet(resultSet));
                     }
                     msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCaseExecution").replace("%OPERATION%", "SELECT"));
-                    answer = new AnswerList(testCaseExecutionList, testCaseExecutionList.size());
+//                    answer = new AnswerList(testCaseExecutionList, testCaseExecutionList.size());
+                    answer.setTotalRows(testCaseExecutionList.size());
                 } catch (SQLException exception) {
                     MyLogger.log(TestCaseExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
@@ -1030,6 +1036,157 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
             }
         }
 
+        answer.setResultMessage(msg);
+        answer.setDataList(testCaseExecutionList);
+        return answer;
+    }
+    
+    @Override
+    public AnswerList readByCriteria(int start, int amount, String sort, String searchTerm, Map<String, List<String>> individualSearch) throws CerberusException {
+        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+        AnswerList answer = new AnswerList();
+        List<String> individalColumnSearchValues = new ArrayList<String>();
+
+        final StringBuffer query = new StringBuffer();
+        
+        
+        query.append("SELECT * FROM testcaseexecution exe ");
+        query.append("where exe.`start`> '").append(DateUtil.getMySQLTimestampTodayDeltaMinutes(-360000)).append("' ");
+        
+        if (!StringUtil.isNullOrEmpty(searchTerm)) {
+            query.append("and (exe.`id` like ? ");
+            query.append(" or exe.`test` like ? ");
+            query.append(" or exe.`testCase` like ? ");
+            query.append(" or exe.`build` like ? ");
+            query.append(" or exe.`revision` like ? ");
+            query.append(" or exe.`environment` like ? ");
+            query.append(" or exe.`country` like ? ");
+            query.append(" or exe.`browser` like ? ");
+            query.append(" or exe.`version` like ? ");
+            query.append(" or exe.`platform` like ? ");
+            query.append(" or exe.`browserfullversion` like ? ");
+            query.append(" or exe.`start` like ? ");
+            query.append(" or exe.`end` like ? ");
+            query.append(" or exe.`controlstatus` like ? ");
+            query.append(" or exe.`controlmessage` like ? ");
+            query.append(" or exe.`application` like ? ");
+            query.append(" or exe.`ip` like ? ");
+            query.append(" or exe.`url` like ? ");
+            query.append(" or exe.`port` like ? ");
+            query.append(" or exe.`tag` like ? ");
+            query.append(" or exe.`finished` like ? ");
+            query.append(" or exe.`verbose` like ? ");
+            query.append(" or exe.`status` like ? ");
+            query.append(" or exe.`crbversion` like ? ");
+            query.append(" or exe.`executor` like ? ");
+            query.append(" or exe.`screensize` like ? )");
+        }
+        if (individualSearch != null && !individualSearch.isEmpty()) {
+            query.append(" and ( 1=1 ");
+            for (Map.Entry<String, List<String>> entry : individualSearch.entrySet()) {
+                query.append(" and ");
+                query.append(SqlUtil.getInSQLClauseForPreparedStatement(entry.getKey(), entry.getValue()));
+                individalColumnSearchValues.addAll(entry.getValue());
+            }
+            query.append(" ) ");
+        }
+
+        if (!StringUtil.isNullOrEmpty(sort)) {
+            query.append(" order by ").append(sort);
+        }
+
+        if ((amount <= 0) || (amount >= MAX_ROW_SELECTED)) {
+            query.append(" limit ").append(start).append(" , ").append(MAX_ROW_SELECTED);
+        } else {
+            query.append(" limit ").append(start).append(" , ").append(amount);
+        }
+        
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query.toString());
+        }
+        List<TestCaseExecution> testCaseExecutionList = new ArrayList<TestCaseExecution>();
+        Connection connection = this.databaseSpring.connect();
+        try {
+            System.out.print(query.toString());
+            PreparedStatement preStat = connection.prepareStatement(query.toString());
+            int i = 1;
+            if (!Strings.isNullOrEmpty(searchTerm)) {
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+            }
+            for (String individualColumnSearchValue : individalColumnSearchValues) {
+                preStat.setString(i++, individualColumnSearchValue);
+            }
+
+            try {
+                ResultSet resultSet = preStat.executeQuery();
+                try {
+                    while (resultSet.next()) {
+                        testCaseExecutionList.add(this.loadFromResultSet(resultSet));
+                    }
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCaseExecution").replace("%OPERATION%", "SELECT"));
+//                    answer = new AnswerList(testCaseExecutionList, testCaseExecutionList.size());
+                    answer.setTotalRows(testCaseExecutionList.size());
+                } catch (SQLException exception) {
+                    MyLogger.log(TestCaseExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
+                    testCaseExecutionList = null;
+                } finally {
+                    resultSet.close();
+                }
+            } catch (SQLException exception) {
+                MyLogger.log(TestCaseExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
+                testCaseExecutionList = null;
+            } finally {
+                preStat.close();
+            }
+        } catch (SQLException exception) {
+            MyLogger.log(TestCaseExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+            msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
+            testCaseExecutionList = null;
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                MyLogger.log(TestCaseExecutionDAO.class.getName(), Level.WARN, e.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
+            }
+        }
+
+        answer.setResultMessage(msg);
+        answer.setDataList(testCaseExecutionList);
         return answer;
     }
 
@@ -1597,6 +1754,7 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
         String build = ParameterParserUtil.parseStringParam(resultSet.getString("exe.build"), "");
         String revision = ParameterParserUtil.parseStringParam(resultSet.getString("exe.revision"), "");
         String environment = ParameterParserUtil.parseStringParam(resultSet.getString("exe.environment"), "");
+        String environmentData = ParameterParserUtil.parseStringParam(resultSet.getString("exe.environmentData"), "");
         String country = ParameterParserUtil.parseStringParam(resultSet.getString("exe.country"), "");
         String browser = ParameterParserUtil.parseStringParam(resultSet.getString("exe.browser"), "");
         String version = ParameterParserUtil.parseStringParam(resultSet.getString("exe.version"), "");
@@ -1617,10 +1775,17 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
         String crbVersion = ParameterParserUtil.parseStringParam(resultSet.getString("exe.crbVersion"), "");
         String executor = ParameterParserUtil.parseStringParam(resultSet.getString("exe.executor"), "");
         String screenSize = ParameterParserUtil.parseStringParam(resultSet.getString("exe.screensize"), "");
-        TestCaseExecution result = factoryTCExecution.create(id, test, testcase, build, revision, environment,
+        String conditionOper = ParameterParserUtil.parseStringParam(resultSet.getString("exe.conditionOper"), "");
+        String conditionVal1 = ParameterParserUtil.parseStringParam(resultSet.getString("exe.conditionVal1"), "");
+        String conditionVal1Init = ParameterParserUtil.parseStringParam(resultSet.getString("exe.conditionVal1Init"), "");
+        String conditionVal2 = ParameterParserUtil.parseStringParam(resultSet.getString("exe.conditionVal2"), "");
+        String conditionVal2Init = ParameterParserUtil.parseStringParam(resultSet.getString("exe.conditionVal2Init"), "");
+        boolean manualExecution = ParameterParserUtil.parseBooleanParam(resultSet.getString("exe.manualExecution"), false);
+        TestCaseExecution result = factoryTCExecution.create(id, test, testcase, build, revision, environment, environmentData,
                 country, browser, version, platform, browserFullVersion, start, end, controlStatus, controlMessage, null, ip, url,
                 port, tag, finished, verbose, 0, 0, 0, true, "", "", status, crbVersion, null, null, null,
-                false, null, null, null, null, null, null, null, null, executor, 0, screenSize);
+                false, null, null, null, null, null, null, null, null, executor, 0, screenSize, null,
+                conditionOper, conditionVal1Init, conditionVal2Init, conditionVal1, conditionVal2, manualExecution);
         result.setApplication(application);
         return result;
     }
@@ -1628,8 +1793,10 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
     /**
      * Uses data of ResultSet to create object {@link TestCaseExecution}
      *
-     * @param resultSet ResultSet relative to select from table TestCaseExecution
-     * @return object {@link TestCaseExecution} with objects {@link TestCase} and {@link Application}
+     * @param resultSet ResultSet relative to select from table
+     * TestCaseExecution
+     * @return object {@link TestCaseExecution} with objects {@link TestCase}
+     * and {@link Application}
      * @throws SQLException when trying to get value from
      * {@link java.sql.ResultSet#getString(String)}
      * @see FactoryTestCaseExecution
@@ -1641,7 +1808,7 @@ public class TestCaseExecutionDAO implements ITestCaseExecutionDAO {
         testCaseExecution.setApplicationObj(applicationDAO.loadFromResultSet(resultSet));
         return testCaseExecution;
     }
-    
+
     private TestCaseExecution loadTestCaseExecutionAndApplicationFromResultSet(ResultSet resultSet) throws SQLException {
         TestCaseExecution testCaseExecution = new TestCaseExecution();
         testCaseExecution = this.loadFromResultSet(resultSet);

@@ -57,6 +57,7 @@
 <%@page import="org.apache.commons.lang3.StringUtils"%>
 <%@page import="org.cerberus.util.answer.AnswerList"%>
 <%@ page import="java.util.*" %>
+<%@ page import="org.cerberus.util.answer.AnswerItem" %>
 <% Date DatePageStart = new Date();%>
 
 <%@page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
@@ -427,6 +428,9 @@
                     String testcase = getRequestParameterWildcardIfEmpty(request, "TestCase");
                     Boolean tinf = getBooleanParameterFalseIfEmpty(request, "Tinf");
             %>
+            <div id="warningOldPage" style="margin: 0; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; border-radius: 4px; border: 1px solid transparent; margin-bottom: 20px; padding: 15px; border-color: #ebccd1; background-color: #f2dede; color:#a94442;">
+                <strong>DEPRECATED</strong> This Page is now deprecated. Follow this link to get the new Page. <a href="TestCaseScript.jsp?test=<%=test%>&testcase=<%=testcase%>"><button style="color: #fff;background-color: #337ab7;border-color:#2e6da4;display:inline-block;padding:6px 12px;margin-bottom:0;font-size:14px;font-weight:400;line-height:1.42857143;text-align:center;white-space:nowrap;vertical-align:middle;-ms-touch-action:manipulation;touch-action:manipulation;cursor:pointer;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;background-image:none;border:1px solid transparent;border-radius:4px">Test Case Script</button></a>
+            </div>
             <input id="urlForListOffunction" value="<%=listOfFunction%>" style="display:none">
             <form action="TestCase.jsp" method="post" name="selectTestCase" id="selectTestCase">
                 <div class="filters" style="float:left; width:100%; height:30px">
@@ -487,7 +491,7 @@
                                         }
                                 }
                                 }
-                                if(test != null && !test.equals("") && !find){
+                                if(testcase != null && !testcase.equals("") && !find2){
                             %>
                             <option style="width: 200px;" class="font_weight_bold_Y" value="<%=testcase%>" selected><%=testcase%>
                             </option>
@@ -526,7 +530,6 @@
                 List<Invariant> countryListInvariant = (List<Invariant>)answerCountry.getDataList();
                 List<String> countryListTestcase = testCaseCountryService.findListOfCountryByTestTestCase(test, testcase);
                 TestCaseExecution tce = testCaseExecutionService.findLastTestCaseExecutionNotPE(test, testcase);
-                List<BuildRevisionInvariant> listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(MySystem, 1));
                 List<TestCaseCountryProperties> tccpList = tccpService.findDistinctPropertiesOfTestCase(test, testcase);
 
                 group = tcase.getGroup();
@@ -547,6 +550,9 @@
                     appSystem = "";
                     SitdmossBugtrackingURL = "";
                 }
+
+                List<BuildRevisionInvariant> listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(appSystem, 1));
+
 
                 /**
                  * We can edit the testcase only if User role is TestAdmin or if
@@ -718,8 +724,8 @@
                                                 </tr>
                                                 <tr>
                                                     <td class="wob"><select id="editApplication" name="editApplication" style="width: 140px"><%
-                                                        for (Application app : myApplicationService.convert(myApplicationService.readBySystem(MySystem))) {
-                                                            %><option value="<%=app.getApplication()%>"<%=tcase.getApplication().compareTo(app.getApplication()) == 0 ? " SELECTED " : ""%>><%=app.getApplication()%></option>
+                                                            for (Application app : myApplicationService.convert(myApplicationService.readBySystem(appSystem))) {
+                                                                %><option value="<%=app.getApplication()%>"<%=tcase.getApplication().compareTo(app.getApplication()) == 0 ? " SELECTED " : ""%>><%=app.getApplication()%></option>
                                                             <% }%>
                                                         </select></td>
                                                     <td class="wob"><%=ComboInvariant(appContext, "editRunQA", "width: 75px", "editRunQA", "runqa", "RUNQA", tcase.getActiveQA(), "", null)%></td>
@@ -728,10 +734,10 @@
                                                     <td class="wob"><%=ComboInvariant(appContext, "editPriority", "width: 75px", "editPriority", "priority", "PRIORITY", String.valueOf(tcase.getPriority()), "", null)%></td>
                                                     <td class="wob"><%=ComboInvariant(appContext, "editGroup", "width: 140px", "editGroup", "editgroup", "GROUP", group, "", null)%></td>
                                                     <td class="wob"><%=ComboInvariant(appContext, "editStatus", "width: 140px", "editStatus", "editStatus", "TCSTATUS", status, "", null)%></td>
-                                                    <%  for (Invariant countryL : countryListInvariant) {%>
+                                                        <%  for (Invariant countryL : countryListInvariant) {%>
                                                     <td class="wob" style="width:1px"><input value="<%=countryL.getValue()%>" type="checkbox" <% if (countryListTestcase.contains(countryL.getValue())) {%>  CHECKED  <% }%>
                                                                                              name="editTestCaseCountry" onclick="javascript:checkDeletePropertiesUncheckingCountry(this.value)"></td> 
-                                                        <%} %>
+                                                            <%}%>
                                                 </tr>
                                             </table>
                                         </td>
@@ -744,7 +750,7 @@
                                     } else {
                                         howTo = howTo.replace(">", "&gt;");
                                     }
-                                    String behavior = tcase.getDescription();
+                                    String behavior = tcase.getBehaviorOrValueExpected();
                                     if (behavior == null || behavior.compareTo("null") == 0) {
                                         behavior = new String(" ");
                                     } else {
@@ -791,9 +797,21 @@
                         </tr>
                         <%  // We are getting here the last execution that was done on the testcase with its associated status.
                             String LastExeMessage;
+                            String redirecturl;
+                            AnswerItem a = parameterService.readByKey("","cerberus_executiondetail_use");
+                            if(a.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && a.getItem() != null) {
+                                Parameter p = (Parameter)a.getItem();
+                                if(!p.getValue().equals("N")) {
+                                    redirecturl = "ExecutionDetail2.jsp?executionId=";
+                                }else{
+                                    redirecturl = "ExecutionDetail.jsp?id_tc=";
+                                }
+                            }else{
+                                redirecturl = "ExecutionDetail.jsp?id_tc=";
+                            }
                             LastExeMessage = "<i>Never Executed</i>";
                             if (tce != null) {
-                                LastExeMessage = "Last <a width : 390px ; href=\"ExecutionDetail2.jsp?executionId=" + tce.getId() + "\">Execution</a> was ";
+                                LastExeMessage = "Last <a width : 390px ; href=\"" + redirecturl + tce.getId() + "\">Execution</a> was ";
                                 if (tce.getControlStatus().compareToIgnoreCase("OK") == 0) {
                                     LastExeMessage = LastExeMessage + "<a style=\"color : green\">" + tce.getControlStatus() + "</a>";
                                 } else {
@@ -851,7 +869,7 @@
                                             <select id="editFromRev" name="editFromRev" class="active" style="width: 50px" >
                                                 <option style="width: 100px" value="" <%=fromRev.compareTo("") == 0 ? " SELECTED " : ""%>>----</option>
                                                 <%
-                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(MySystem, 2));
+                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(appSystem, 2));
                                                     for (BuildRevisionInvariant myBR : listBuildRev) {
                                                 %><option style="width: 100px" value="<%= myBR.getVersionName()%>" <%=fromRev.compareTo(myBR.getVersionName()) == 0 ? " SELECTED " : ""%>><%= myBR.getVersionName()%></option>
                                                 <% }%>
@@ -861,7 +879,7 @@
                                             <select id="editToBuild" name="editToBuild" class="active" style="width: 70px" >
                                                 <option style="width: 100px" value="" <%=toBuild.compareTo("") == 0 ? " SELECTED " : ""%>>----</option>
                                                 <%
-                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(MySystem, 1));
+                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(appSystem, 1));
                                                     for (BuildRevisionInvariant myBR : listBuildRev) {
                                                 %><option style="width: 100px" value="<%= myBR.getVersionName()%>" <%=toBuild.compareTo(myBR.getVersionName()) == 0 ? " SELECTED " : ""%>><%= myBR.getVersionName()%></option>
                                                 <% }%>
@@ -871,7 +889,7 @@
                                             <select id="editToRev" name="editToRev" class="active" style="width: 50px" >
                                                 <option style="width: 100px" value="" <%=toRev.compareTo("") == 0 ? " SELECTED " : ""%>>----</option>
                                                 <%
-                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(MySystem, 2));
+                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(appSystem, 2));
                                                     for (BuildRevisionInvariant myBR : listBuildRev) {
                                                 %><option style="width: 100px" value="<%= myBR.getVersionName()%>" <%=toRev.compareTo(myBR.getVersionName()) == 0 ? " SELECTED " : ""%>><%= myBR.getVersionName()%></option>
                                                 <% }
@@ -884,7 +902,7 @@
                                             <select id="editTargetBuild" name="editTargetBuild" class="active" style="width: 70px" >
                                                 <option style="width: 100px" value="" <%=targetBuild.compareTo("") == 0 ? " SELECTED " : ""%>>----</option>
                                                 <%
-                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(MySystem, 1));
+                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(appSystem, 1));
                                                     for (BuildRevisionInvariant myBR : listBuildRev) {
                                                 %><option style="width: 100px" value="<%= myBR.getVersionName()%>" <%=targetBuild.compareTo(myBR.getVersionName()) == 0 ? " SELECTED " : ""%>><%= myBR.getVersionName()%></option>
                                                 <% }%>
@@ -894,7 +912,7 @@
                                             <select id="editTargetRev" name="editTargetRev" class="active" style="width: 50px" >
                                                 <option style="width: 100px" value="" <%=targetRev.compareTo("") == 0 ? " SELECTED " : ""%>>----</option>
                                                 <%
-                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(MySystem, 2));
+                                                    listBuildRev = buildRevisionInvariantService.convert(buildRevisionInvariantService.readBySystemLevel(appSystem, 2));
                                                     for (BuildRevisionInvariant myBR : listBuildRev) {
                                                 %><option style="width: 100px" value="<%= myBR.getVersionName()%>" <%=targetRev.compareTo(myBR.getVersionName()) == 0 ? " SELECTED " : ""%>><%= myBR.getVersionName()%></option>
                                                 <% } %>
@@ -979,7 +997,7 @@
                                 <div id="StepLibDiv" style="margin-top:10px; background-color:white; width:0%; float:left; display:none; ">
                                     <div style="width:13%;position:fixed;background-color:white;height:500px; overflow: auto">    
                                         <%
-                                            List<TestCaseStep> tcsListOfUseStep = tcsService.getStepLibraryBySystem(MySystem);
+                                            List<TestCaseStep> tcsListOfUseStep = tcsService.getStepLibraryBySystem(appSystem);
                                             String testOfLib = "";
                                             for (TestCaseStep tcs : tcsListOfUseStep) {
                                                 if (!tcs.getTest().equals(testOfLib)) {
@@ -1012,7 +1030,7 @@
                                     </div>
                                     <div id="StepNumberDiv0" style="float:left;">
                                     </div>
-                                    <input style="display:none" value="<%=MySystem%>">
+                                    <input style="display:none" value="<%=appSystem%>">
                                     <%=ComboInvariant(appContext, "action_action_temp", "width: 136px; display:none", "action_action_temp", "wob", "ACTION", null, "", null)%>
                                     <%=ComboInvariant(appContext, "actions_action_", "width: 150px;visibility:hidden", "actions_action_", "actions_action_", "ACTION", "", "", null)%>
 
@@ -1106,9 +1124,28 @@
                                                 <input type="hidden" name="initial_step_number_<%=incrementStep%>" id="initial_step_number_<%=incrementStep%>" value="<%=tcs.getStep()%>">
                                             </div>
                                             <div id="StepDescDiv" style="width:30%;float:left;margin-top:10px">
-                                                <div><div><input maxlength="150" style="float:right;font-weight: bold; width: 100%;background-color:transparent; font-weight:bold;font-size:14px ;font-family: Trebuchet MS; color:#333333; border-color:#EEEEEE;border-style:solid; border-width:thin"
+                                                <div>
+                                                    <div>
+                                                        <input maxlength="150" style="float:right;font-weight: bold; width: 100%;background-color:transparent; font-weight:bold;font-size:14px ;font-family: Trebuchet MS; color:#333333; border-color:#EEEEEE;border-style:solid; border-width:thin"
                                                                  placeholder="Description" data-fieldtype="Description" name="step_description_<%=incrementStep%>" id="step_description_<%=incrementStep%>" value="<%=tcs.getDescription().replace("\"", "&quot;")%>">
-                                                    </div></div></div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                                    <div style="width:100%; float:bottom;">
+                                                                        <div style="float:left;width:80px;"><p name="labelTestCaseStepConditionOper" style="float:right;font-weight:bold;" link="white" >Cond.</p>
+                                                                        </div>
+                                                                        <%=ComboInvariant(appContext, "step_conditionoper_" + incrementStep, "width:50%;font-size:10px ;border: 1px solid white;" , "step_conditionoper_" + incrementStep , "technical_part", "STEPCONDITIONOPER", tcs.getConditionOper(), "", null)%>
+                                                                    </div>
+                                                                    <div class="technical_part" style="width:100%;float:bottom; ">
+                                                                        <div style="float:left;width:80px;"><p name="labelTestCaseStepConditionVal1" style="float:right;font-weight:bold;" link="white" >Val1</p>
+                                                                        </div><input class="wob" style="width: 70%;border: 1px solid white;"
+                                                                                     value="<%=tcs.getConditionVal1().replace("\"","&quot;")%>" 
+                                                                                     id="step_conditionval1_<%=incrementStep%>"
+                                                                                     name="step_conditionval1_<%=incrementStep%>" />
+                                                                        <img style="max-height:20px; float:left;" id="step_conditionval1_<%=incrementStep%>" data-incrementStep=<%=incrementStep%> style="display:none;">
+                                                                    </div>
+                                                </div>
+                                            </div>
                                             <div id="StepUseStepDiv" style="float:left">UseStep
                                                 <input type="checkbox" id="step_useStep_<%=incrementStep%>" name="step_useStep_<%=incrementStep%>" data-step-number="<%=incrementStep%>" style="margin-top:12.5px;font-weight: bold; width:20px" 
                                                        <% if (tcs.getUseStep().equals("Y")) {%>
@@ -1137,13 +1174,13 @@
                                             </div>
                                             <div id="StepUseStepTestDiv<%=incrementStep%>" style="float:left; width:10%">
                                                 <select id="step_useStepTest_<%=incrementStep%>" name="step_useStepTest_<%=incrementStep%>" style="width: 100%;margin-top:7.5px;font-weight: bold;" 
-                                                        OnChange="findStepBySystemTest(this, '<%=MySystem%>', $('#step_useStepTestCase_<%=incrementStep%>'), 
+                                                        OnChange="findStepBySystemTest(this, '<%=appSystem%>', $('#step_useStepTestCase_<%=incrementStep%>'),
                                                                     $('#load_step_inLibrary_<%=incrementStep%>'), '')">
                                                     <%  if (tcs.getUseStepTest() == null || tcs.getUseStepTest().equals("")) { %>
                                                     <option style="width: 200px" value="">-- Choose Test --
                                                     </option>
                                                     <%  }
-                                                        List<TestCaseStep> tcsLib = tcsService.getStepLibraryBySystem(MySystem);
+                                                        List<TestCaseStep> tcsLib = tcsService.getStepLibraryBySystem(appSystem);
                                                         Set<String> tList = new HashSet();
                                                         HashMap tcListByTc = new HashMap();
                                                         List<String> tcList = new ArrayList();
@@ -1175,7 +1212,7 @@
 
                                             <div id="StepUseStepTestCaseDiv<%=incrementStep%>" style="float:left;width:10%">
                                                 <select name="step_useStepTestCase_<%=incrementStep%>" style="width: 100%;margin-top:7.5px;font-weight: bold;" 
-                                                        OnChange="findStepBySystemTestTestCase($('#step_useStepTest_<%=incrementStep%>'), this, '<%=MySystem%>', 
+                                                        OnChange="findStepBySystemTestTestCase($('#step_useStepTest_<%=incrementStep%>'), this, '<%=appSystem%>',
                                                                     $('#step_useStepStep_<%=incrementStep%>'), $('#load_step_inLibrary_<%=incrementStep%>'), '', false)"
                                                         id="step_useStepTestCase_<%=incrementStep%>">
                                                     <%  if (tcs.getUseStepTestCase().equals("")) { %>
@@ -1198,7 +1235,7 @@
                                                     <%  } else {
                                                         List<TestCaseStep> tcstepList = tcsService.getListOfSteps(tcs.getUseStepTest(), tcs.getUseStepTestCase());
                                                         for (TestCaseStep tcstep : tcstepList) {
-                                                            if(tcstep.getInLibrary().equalsIgnoreCase("Y")){
+                                                            if ((tcstep.getInLibrary().equalsIgnoreCase("Y")) || (tcs.getUseStepStep().compareTo(tcstep.getStep()) == 0)){
                                                         %>
 
                                                     <option style="width: 400px;" value="<%=tcstep.getStep()%>" <%=tcs.getUseStepStep().compareTo(tcstep.getStep()) == 0 ? " SELECTED " : ""%>><%=tcstep.getSort()%> : <%=tcstep.getDescription()%>
@@ -1494,12 +1531,31 @@
                                                             </div>
                                                             <div style="height:100%;width:80%;float:left;display:inline-block">
                                                                 <div class="functional_description" style="clear:both;width:100%;height:20px">
-                                                                    <div style="float:left; width:80%">
+                                                                    <div style="float:left; width:50%">
                                                                         <div style="float:left;width:80px; "><p name="labelTestCaseStepActionControlDescription" style="float:right;font-weight:bold;" link="white" >Description</p>
                                                                         </div>
                                                                         <input class="wob" placeholder="Description" class="functional_description" style="border-style:groove;border-width:thin;border-color:white;border: 2px solid white; color:#333333; width: 80%; font-weight:bold;font-size:12px ;font-family: Trebuchet MS; "
                                                                                data-fieldtype="Description" value="<%=tcsac.getDescription()%>" id ="control_description_<%=incrementStep%>_<%=incrementAction%>_<%=incrementControl%>" name="control_description_<%=incrementStep%>_<%=incrementAction%>_<%=incrementControl%>" 
                                                                                maxlength="1000"  <%if (useStep) {%>readonly<%}%> />
+                                                                    </div>
+                                                                    <div style="width:20%; float:left;">
+                                                                        <div style="float:left;width:80px; "><p name="labelTestCaseStepActionControlConditionOper" style="float:right;font-weight:bold;" link="white" >Cond.</p>
+                                                                        </div>
+                                                                        <%if (!useStep) {%>
+                                                                            <%=ComboInvariant(appContext, "control_conditionoper_" + incrementStep + "_" + incrementAction + "_" + incrementControl, "width:50%;font-size:10px ;border: 1px solid white;color:" + actionFontColor, "control_conditionoper_" + incrementStep + "_" + incrementAction + "_" + incrementControl, "technical_part", "CONTROLCONDITIONOPER", tcsac.getConditionOper(), "", null)%>
+                                                                        <%}else{
+                                                                            String controlOper = "control_conditionoper_" + incrementStep + "_" + incrementAction + "_" + incrementControl;
+                                                                            %>    
+                                                                            <input value="<%=tcsac.getConditionOper()%>" name="<%=controlOper%>" style="width:50%;font-size:10px ;border: 1px solid white;color:grey" class="technical_part" id="<%=controlOper%>" readonly />
+                                                                        <%}%>    
+                                                                    </div>
+                                                                    <div class="technical_part" style="width:10%;float:left; ">
+                                                                        <div style="float:left;"><p name="labelTestCaseStepActionControlConditionOper" style="float:right;font-weight:bold;" link="white" >Val1</p>
+                                                                        </div><input class="wob" style="width: 70%;border: 1px solid white; color:<%=actionFontColor%>"
+                                                                                     value="<%=tcsac.getConditionVal1().replace("\"","&quot;")%>" 
+                                                                                     id="control_conditionval1_<%=incrementStep%>_<%=incrementAction%>_<%=incrementControl%>"
+                                                                                     name="control_conditionval1_<%=incrementStep%>_<%=incrementAction%>_<%=incrementControl%>" <%if (useStep) {%>readonly<%}%> />
+                                                                        <img style="max-height:20px; float:left;" id="control_conditionval1_<%=incrementStep%>_<%=incrementAction%>_<%=incrementControl%>" data-incrementStep=<%=incrementStep%> data-incrementAction=<%=incrementAction%> style="display:none;">
                                                                     </div>
                                                                 </div>
                                                                 <div style="clear:both;display:inline-block; width:100%; height:15px" >
@@ -1990,7 +2046,7 @@
                     </td>
                     <%        }%>    
                     <td>
-                        <a href="ExecutionDetailList.jsp?test=<%=test%>&testcase=<%=testcase%>&MySystem=<%=appSystem%>">See Last Executions..</a>
+                        <a href="TestCaseExecution.jsp?test=<%=test%>&testcase=<%=testcase%>">See Last Executions..</a>
                     </td>
                     <%if (request.getUserPrincipal()
                                 != null && request.isUserInRole("TestAdmin")) {
@@ -2102,11 +2158,23 @@
                 <input type="hidden" data-id="control_technical_control_template">
                 <div style="height:100%;width:89%;float:left;display:inline-block">
                     <div class="functional_description_control" style="clear:both;width:100%;height:20px">
-                        <div style="float:left; width:80%">
+                        <div style="float:left; width:40%">
                             <div style="float:left;width:80px; "><p style="float:right;font-weight:bold;color:white;" link="white" ><%out.print(docService.findLabelHTML("testcasestepaction", "description", "Description", myLang));%></p>
                             </div>
                             <input class="wob" placeholder="Description" class="functional_description_control" style="border-style:groove;border-width:thin;border-color:white;border: 1px solid white; color:#333333; width: 80%; background-color: transparent; font-weight:bold;font-size:14px ;font-family: Trebuchet MS; "
                                    data-id="control_description_template" data-fieldtype="Description">
+                        </div>
+                        <div style="width:20%; float:left;">
+                            <div style="float:left;width:30px; "><p style="float:right;font-weight:bold;color:white;" link="white" ><%out.print(docService.findLabelHTML("testcasestepactioncontrol", "ConditionOper", "ConditionOper", myLang));%></p>
+                            </div>
+                            <%=ComboInvariant(appContext, "", "width: 70%;border: 1px solid white; background-color:transparent;", "control_conditionoper_template", "wob", "CONTROLCONDITIONOPER", "", "", null)%>
+                        </div>
+                        <div class="technical_part" style="width:10%;float:left;">
+                            <div style="float:left;"><p style="float:right;font-weight:bold;color:white;" link="white" ><%out.print(docService.findLabelHTML("testcasestepactioncontrol", "ConditionVal1", "ConditionVal1", myLang));%></p>
+                            </div>
+                            <input class="wob" style="width: 75%;border: 1px solid white; background-color:transparent; "
+                                   data-id="control_conditionval1_template">
+                            <img style="max-height:20px;" data-id="control_conditionval1_template_img" style="display:none;">
                         </div>
                     </div>
                     <div style="clear:both; width:100%; height:15px">
@@ -2165,6 +2233,21 @@
                         <input style="float:right;margin-top:10px;font-weight: bold; width: 500px;background-color:transparent; font-weight:bold;font-size:16px ;font-family: Trebuchet MS;
                                color:#333333; border-color:#EEEEEE; border-width: 1px" maxlength="150" data-id="step_description_template">
                     </div>
+                                                <div>
+                                                                    <div style="width:100%; float:bottom;">
+                                                                        <div style="float:left;width:80px;"><p name="labelTestCaseStepConditionOper" style="float:right;font-weight:bold;" link="white" >Cond.</p>
+                                                                        </div>
+                                                                        <%=ComboInvariant(appContext, "step_conditionoper_template", "width:50%;font-size:10px ;border: 1px solid white;" , "step_conditionoper_template" , "technical_part", "STEPCONDITIONOPER", "", "", null)%>
+                                                                    </div>
+                                                                    <div class="technical_part" style="width:100%;float:bottom; ">
+                                                                        <div style="float:left;width:80px;"><p name="labelTestCaseStepConditionVal1" style="float:right;font-weight:bold;" link="white" >Val1</p>
+                                                                        </div><input class="wob" style="width: 70%;border: 1px solid white;"
+                                                                                     value="" 
+                                                                                     id="step_conditionval1_template"
+                                                                                     name="step_conditionval1_template" />
+                                                                        <img style="max-height:20px; float:left;" id="step_conditionval1_template_img" style="display:none;">
+                                                                    </div>
+                                                </div>
                     <div id="StepUseStepDiv" style="float:left">UseStep
                         <input type="checkbox" data-id="step_useStep_template" style="margin-top:15px;font-weight: bold; width:20px">
                         <input type="hidden" name="step_useStepChanged_template" value="N" id="step_useStepChanged_template" />
@@ -2178,7 +2261,7 @@
                     <div id="StepUseStepTestDiv" style="float:left">
                         <select data-id="step_useStepTest_template" style="width: 150px;margin-top:12.5px;font-weight: bold;">
                             <option style="width: 400px" value="">Choose Test</option>                            
-                            <% List<TestCaseStep> tcsLib = tcsService.getStepLibraryBySystem(MySystem);
+                            <% List<TestCaseStep> tcsLib = tcsService.getStepLibraryBySystem(appSystem);
                                 Set<String> tList = new HashSet();
                                 HashMap tcListByTc = new HashMap();
                                 List<String> tcList = new ArrayList();
@@ -2594,7 +2677,7 @@
                             str = picture.pop();
                         }
                     }
-                    if (str != undefined && str.indexOf("object.") == 0 && (str.indexOf(".picture") == str.length - 8 || str.indexOf(".value") == str.length - 6)) {
+                    if (str != undefined && str.indexOf("object.") == 0 && (str.indexOf(".picturepath") == str.length - 12 || str.indexOf(".pictureurl") == str.length - 11 || str.indexOf(".value") == str.length - 6)) {
                         var pic = str.split(".");
                         if(pic.length >= 3) {
                             pic.pop();

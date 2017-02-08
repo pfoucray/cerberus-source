@@ -17,7 +17,13 @@
  */
 package org.cerberus.crud.entity;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author bcivel
@@ -31,6 +37,7 @@ public class TestCaseStepAction {
     private int sort;
     private String conditionOper;
     private String conditionVal1;
+    private String conditionVal2;
     private String action;
     private String value1;
     private String value2;
@@ -67,14 +74,12 @@ public class TestCaseStepAction {
     public static final String ACTION_SELECT = "select";
     public static final String ACTION_TYPE = "type";
     public static final String ACTION_WAIT = "wait";
-    public static final String ACTION_CALLSOAP = "callSoap";
-    public static final String ACTION_CALLSOAPWITHBASE = "callSoapWithBase";
+    public static final String ACTION_CALLSERVICE = "callService";
     public static final String ACTION_REMOVEDIFFERENCE = "removeDifference";
     public static final String ACTION_EXECUTESQLUPDATE = "executeSqlUpdate";
     public static final String ACTION_EXECUTESQLSTOREPROCEDURE = "executeSqlStoredProcedure";
     public static final String ACTION_CALCULATEPROPERTY = "calculateProperty";
     public static final String ACTION_DONOTHING = "doNothing";
-    public static final String ACTION_SKIPACTION = "skipAction";
     @Deprecated
     public static final String ACTION_GETPAGESOURCE = "getPageSource";
     @Deprecated
@@ -96,6 +101,17 @@ public class TestCaseStepAction {
      */
     public static final String CONDITIONOPER_ALWAYS = "always";
     public static final String CONDITIONOPER_IFPROPERTYEXIST = "ifPropertyExist";
+    public static final String CONDITIONOPER_IFNUMERICEQUAL = "ifNumericEqual";
+    public static final String CONDITIONOPER_IFNUMERICDIFFERENT = "ifNumericDifferent";
+    public static final String CONDITIONOPER_IFNUMERICGREATER = "ifNumericGreater";
+    public static final String CONDITIONOPER_IFNUMERICGREATEROREQUAL = "ifNumericGreaterOrEqual";
+    public static final String CONDITIONOPER_IFNUMERICMINOR = "ifNumericMinor";
+    public static final String CONDITIONOPER_IFNUMERICMINOROREQUAL = "ifNumericMinorOrEqual";
+    public static final String CONDITIONOPER_IFSTRINGEQUAL = "ifStringEqual";
+    public static final String CONDITIONOPER_IFSTRINGDIFFERENT = "ifStringDifferent";
+    public static final String CONDITIONOPER_IFSTRINGGREATER = "ifStringGreater";
+    public static final String CONDITIONOPER_IFSTRINGMINOR = "ifStringMinor";
+    public static final String CONDITIONOPER_IFSTRINGCONTAINS = "ifStringContains";
     public static final String CONDITIONOPER_NEVER = "never";
 
     public String getConditionOper() {
@@ -112,6 +128,14 @@ public class TestCaseStepAction {
 
     public void setConditionVal1(String conditionVal1) {
         this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
     }
 
     public String getScreenshotFilename() {
@@ -243,6 +267,7 @@ public class TestCaseStepAction {
         hash = 79 * hash + this.sort;
         hash = 79 * hash + (this.conditionOper != null ? this.conditionOper.hashCode() : 0);
         hash = 79 * hash + (this.conditionVal1 != null ? this.conditionVal1.hashCode() : 0);
+        hash = 79 * hash + (this.conditionVal2 != null ? this.conditionVal2.hashCode() : 0);
         hash = 79 * hash + (this.action != null ? this.action.hashCode() : 0);
         hash = 79 * hash + (this.value1 != null ? this.value1.hashCode() : 0);
         hash = 79 * hash + (this.value2 != null ? this.value2.hashCode() : 0);
@@ -281,6 +306,9 @@ public class TestCaseStepAction {
         if ((this.conditionVal1 == null) ? (other.conditionVal1 != null) : !this.conditionVal1.equals(other.conditionVal1)) {
             return false;
         }
+        if ((this.conditionVal2 == null) ? (other.conditionVal2 != null) : !this.conditionVal2.equals(other.conditionVal2)) {
+            return false;
+        }
         if ((this.action == null) ? (other.action != null) : !this.action.equals(other.action)) {
             return false;
         }
@@ -307,4 +335,33 @@ public class TestCaseStepAction {
         return "TestCaseStepAction{" + "test=" + test + ", testCase=" + testCase + ", step=" + step + ", sequence=" + sequence + ", action=" + action + ", object=" + value1 + ", property=" + value2 + ", description=" + description + ", testCaseStepActionControl=" + testCaseStepActionControl + '}';
     }
 
+    public JSONObject toJson() {
+        JSONObject result = new JSONObject();
+        try {
+            result.put("test", this.getTest());
+            result.put("testcase", this.getTestCase());
+            result.put("step", this.getStep());
+            result.put("sequence", this.getSequence());
+            result.put("sort", this.getSort());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionVal1", this.getConditionVal1());
+            result.put("conditionVal2", this.getConditionVal2());
+            result.put("action", this.getAction());
+            result.put("value1", this.getValue1());
+            result.put("value2", this.getValue2());
+            result.put("forceExeStatus", this.getForceExeStatus());
+            result.put("description", this.getDescription());
+            result.put("screenshotFilename", this.getScreenshotFilename());
+            JSONArray array = new JSONArray();
+            if(this.getTestCaseStepActionControl() != null) {
+                for (Object testCaseStepActionControlExecution : this.getTestCaseStepActionControl()) {
+                    array.put(((TestCaseStepActionControl) testCaseStepActionControlExecution).toJson());
+                }
+            }
+            result.put("testCaseStepActionControlList", array);
+        } catch (JSONException ex) {
+            Logger.getLogger(TestCaseStepActionExecution.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return result;
+    }
 }

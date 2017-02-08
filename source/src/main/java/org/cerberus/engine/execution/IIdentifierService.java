@@ -27,14 +27,14 @@ import org.cerberus.exception.CerberusEventException;
  * @author bcivel
  */
 public interface IIdentifierService {
-    
-     public Identifier convertStringToIdentifier(String input);
-     
-     public Identifier convertStringToSelectIdentifier(String input);
-     
-     public void checkSelectOptionsIdentifier(String identifier) throws CerberusEventException;
 
-     public void checkWebElementIdentifier(String identifier) throws CerberusEventException;
+    Identifier convertStringToIdentifier(String input);
 
-    public void checkSQLIdentifier(String identifier) throws CerberusEventException;
-     }
+    Identifier convertStringToSelectIdentifier(String input);
+
+    void checkSelectOptionsIdentifier(String identifier) throws CerberusEventException;
+
+    void checkWebElementIdentifier(String identifier) throws CerberusEventException;
+
+    void checkSQLIdentifier(String identifier) throws CerberusEventException;
+}

@@ -130,7 +130,7 @@ public class GetReport extends HttpServlet {
         //TODO only keep the last parameter
         int priority = -1;
         String temp = req.getParameter("Priority");
-        if (temp != null && !temp.equalsIgnoreCase("All") && StringUtil.isNumeric(temp)) {
+        if (temp != null && !temp.equalsIgnoreCase("All") && StringUtil.isInteger(temp)) {
             priority = Integer.parseInt(temp);
         }
         String status = this.getValues(req, "Status");
@@ -143,7 +143,7 @@ public class GetReport extends HttpServlet {
 
         IFactoryTestCase factoryTCase = new FactoryTestCase();
         return factoryTCase.create(test, null, null, null, creator, implementer, null, project, null, null, application, null, null, null, priority, group,
-                status, null, null, null, active, null, null, null, null, null, null, targetBuild, targetRev, comment, "", null, null, null, null);
+                status, null, null, null, active, null, null, null, null, null, null, null, null, null, targetBuild, targetRev, comment, "", null, null, null, null);
     }
 
     /**

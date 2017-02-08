@@ -17,11 +17,103 @@
  */
 package org.cerberus.crud.entity;
 
+import org.cerberus.util.validity.Validity;
+
 /**
- *
  * @author bcivel
  */
 public class CountryEnvironmentParameters {
+
+    public static class Key implements Validity {
+
+        public static Key fromCountryEnvironmentParameters(CountryEnvironmentParameters countryEnvironmentParameters) {
+            return new Key(
+                    countryEnvironmentParameters.getSystem(),
+                    countryEnvironmentParameters.getApplication(),
+                    countryEnvironmentParameters.getCountry(),
+                    countryEnvironmentParameters.getEnvironment()
+            );
+        }
+
+        private String system;
+
+        private String application;
+
+        private String country;
+
+        private String environment;
+
+        /**
+         * For (de)serialization purpose
+         */
+        private Key() {
+
+        }
+
+        public Key(String system, String application, String country, String environment) {
+            this.system = system;
+            this.application = application;
+            this.country = country;
+            this.environment = environment;
+        }
+
+
+        public String getSystem() {
+            return system;
+        }
+
+        public String getApplication() {
+            return application;
+        }
+
+        public String getCountry() {
+            return country;
+        }
+
+        public String getEnvironment() {
+            return environment;
+        }
+
+        @Override
+        public boolean isValid() {
+            return system != null && application != null && country != null && environment != null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Key key = (Key) o;
+
+            if (system != null ? !system.equals(key.system) : key.system != null) return false;
+            if (application != null ? !application.equals(key.application) : key.application != null)
+                return false;
+            if (country != null ? !country.equals(key.country) : key.country != null) return false;
+            return environment != null ? environment.equals(key.environment) : key.environment == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = system != null ? system.hashCode() : 0;
+            result = 31 * result + (application != null ? application.hashCode() : 0);
+            result = 31 * result + (country != null ? country.hashCode() : 0);
+            result = 31 * result + (environment != null ? environment.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Key{" +
+                    "system='" + system + '\'' +
+                    ", application='" + application + '\'' +
+                    ", country='" + country + '\'' +
+                    ", environment='" + environment + '\'' +
+                    '}';
+        }
+
+    }
 
     private String system;
     private String country;
@@ -35,6 +127,7 @@ public class CountryEnvironmentParameters {
     private String var2;
     private String var3;
     private String var4;
+    private int poolSize;
 
     public String getApplication() {
         return application;
@@ -132,6 +225,14 @@ public class CountryEnvironmentParameters {
         this.var4 = var4;
     }
 
+    public int getPoolSize() {
+        return poolSize;
+    }
+
+    public void setPoolSize(int poolSize) {
+        this.poolSize = poolSize;
+    }
+
     public boolean hasSameKey(CountryEnvironmentParameters obj) {
         if (obj == null) {
             return false;
@@ -170,6 +271,7 @@ public class CountryEnvironmentParameters {
         hash = 29 * hash + (this.var2 != null ? this.var2.hashCode() : 0);
         hash = 29 * hash + (this.var3 != null ? this.var3.hashCode() : 0);
         hash = 29 * hash + (this.var4 != null ? this.var4.hashCode() : 0);
+        hash = 29 * hash + this.poolSize;
         return hash;
     }
 
@@ -216,6 +318,9 @@ public class CountryEnvironmentParameters {
             return false;
         }
         if ((this.var4 == null) ? (other.var4 != null) : !this.var4.equals(other.var4)) {
+            return false;
+        }
+        if (this.poolSize != other.poolSize) {
             return false;
         }
         return true;

@@ -17,6 +17,11 @@
  */
 package org.cerberus.crud.entity;
 
+import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -35,6 +40,9 @@ public class TestCase {
     private int priority;
     private String status;
     private String tcActive;
+    private String conditionOper;
+    private String conditionVal1;
+    private String conditionVal2;
     private String group;
     private String origine;
     private String refOrigine;
@@ -67,6 +75,9 @@ public class TestCase {
     private List<TestCaseStep> testCaseStep;
     private List<TestCaseStepBatch> testCaseStepBatch;
     private List<TestCaseLabel> testCaseLabel;
+
+    private static final Logger LOG = Logger.getLogger(TestCase.class);
+
 
     public String getDateCreated() {
         return dateCreated;
@@ -106,6 +117,30 @@ public class TestCase {
 
     public void setTcActive(String active) {
         this.tcActive = active;
+    }
+
+    public String getConditionOper() {
+        return conditionOper;
+    }
+
+    public void setConditionOper(String conditionOper) {
+        this.conditionOper = conditionOper;
+    }
+
+    public String getConditionVal1() {
+        return conditionVal1;
+    }
+
+    public void setConditionVal1(String conditionVal1) {
+        this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
     }
 
     public String getApplication() {
@@ -370,6 +405,57 @@ public class TestCase {
 
     public void setDateModif(Timestamp dateModif) {
         this.dateModif = dateModif;
+    }
+
+    public JSONObject toJson(){
+        JSONObject result = new JSONObject();
+        try {
+            result.put("test", this.getTest());
+            result.put("testcase", this.getTestCase());
+            result.put("application", this.getApplication());
+            result.put("project", this.getProject());
+            result.put("ticket", this.getTicket());
+            result.put("description", this.getDescription());
+            result.put("behaviourOrValueExpected", this.getBehaviorOrValueExpected());
+            result.put("priority", this.getPriority());
+            result.put("status", this.getStatus());
+            result.put("tcActive", this.getTcActive());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionValue1", this.getConditionVal1());
+            result.put("conditionValue2", this.getConditionVal1());
+            result.put("group", this.getGroup());
+            result.put("origine", this.getOrigine());
+            result.put("refOrigine", this.getRefOrigine());
+            result.put("howTo", this.getHowTo());
+            result.put("comment", this.getComment());
+            result.put("fromBuild", this.getFromBuild());
+            result.put("fromRev", this.getFromRev());
+            result.put("toBuild", this.getToBuild());
+            result.put("toRev", this.getToRev());
+            result.put("bugId", this.getBugID());
+            result.put("targetBuild", this.getTargetBuild());
+            result.put("targetRev", this.getTargetRev());
+            result.put("implementer", this.getImplementer());
+            result.put("activeQA", this.getActiveQA());
+            result.put("activeUAT", this.getActiveUAT());
+            result.put("activePROD", this.getActivePROD());
+            result.put("function", this.getFunction());
+            result.put("usrAgent", this.getUserAgent());
+            result.put("usrCreated", this.getUsrCreated());
+            result.put("dateCreated", this.getDateCreated());
+            result.put("usrModif", this.getUsrModif());
+            result.put("dateModif", this.getDateModif());
+            JSONArray array = new JSONArray();
+            if (this.getTestCaseStep() != null ) {
+                for (Object testCaseStepExecution : this.getTestCaseStep()) {
+                    array.put(((TestCaseStep) testCaseStepExecution).toJson());
+                }
+            }
+            result.put("testCaseStepList", array);
+        } catch (JSONException ex) {
+            LOG.error(ex.toString());
+        }
+        return result;
     }
 
 }

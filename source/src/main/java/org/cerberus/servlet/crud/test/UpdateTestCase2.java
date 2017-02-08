@@ -144,18 +144,11 @@ public class UpdateTestCase2 extends HttpServlet {
              * exist, then we can update it.
              */
             {
-                if (!request.isUserInRole("Test")) { // We cannot update the testcase if the user is not at least in Test role.
+                if (!testCaseService.hasPermissionsUpdate(tc, request)) { // We cannot update the testcase if the user is not at least in Test role.
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
                     msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
                             .replace("%OPERATION%", "Update")
-                            .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege."));
-                    finalAnswer.setResultMessage(msg);
-
-                } else if ((tc.getStatus().equalsIgnoreCase("WORKING")) && !(request.isUserInRole("TestAdmin"))) { // If Test Case is WORKING we need TestAdmin priviliges.
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
-                            .replace("%OPERATION%", "Update")
-                            .replace("%REASON%", "Not enought privilege to update the testcase. The test case is in WORKING status and needs TestAdmin privilige to be updated"));
+                            .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege or even TestAdmin in case the test is in WORKING status."));
                     finalAnswer.setResultMessage(msg);
 
                 } else {
@@ -289,6 +282,7 @@ public class UpdateTestCase2 extends HttpServlet {
         tc.setToRev(ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("toRev"), tc.getToRev()));
         tc.setTargetBuild(ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("targetSprint"), tc.getTargetBuild()));
         tc.setTargetRev(ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("targetRev"), tc.getTargetRev()));
+        tc.setConditionOper(ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("conditionOper"), tc.getConditionOper()));
         tc.setPriority(ParameterParserUtil.parseIntegerParam(request.getParameter("priority"), tc.getPriority()));
 
         // Parameter that needs to be secured --> We SECURE+DECODE them
@@ -302,6 +296,8 @@ public class UpdateTestCase2 extends HttpServlet {
         tc.setComment(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("comment"), tc.getComment(), charset));
         tc.setFunction(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("function"), tc.getFunction(), charset));
         tc.setUserAgent(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("userAgent"), tc.getUserAgent(), charset));
+        tc.setConditionVal1(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("conditionVal1"), tc.getConditionVal1(), charset));
+        tc.setConditionVal2(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("conditionVal2"), tc.getConditionVal2(), charset));
 
         // Parameter that we cannot secure as we need the html --> We DECODE them
         tc.setBehaviorOrValueExpected(ParameterParserUtil.parseStringParamAndDecode(request.getParameter("behaviorOrValueExpected"), tc.getBehaviorOrValueExpected(), charset));

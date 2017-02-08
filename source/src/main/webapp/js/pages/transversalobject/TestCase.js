@@ -53,6 +53,9 @@ function displayTestCaseLabel(doc) {
     $("[name='toRevField']").html(doc.getDocOnline("testcase", "ToRev"));
     $("[name='targetSprintField']").html(doc.getDocOnline("testcase", "TargetBuild"));
     $("[name='targetRevField']").html(doc.getDocOnline("testcase", "TargetRev"));
+    $("[name='conditionOperField']").html(doc.getDocOnline("testcase", "ConditionOper"));
+    $("[name='conditionVal1Field']").html(doc.getDocOnline("testcase", "ConditionVal1"));
+    $("[name='conditionVal2Field']").html(doc.getDocOnline("testcase", "ConditionVal2"));
     $("[name='commentField']").html(doc.getDocOnline("testcase", "Comment"));
     $("#filters").html(doc.getDocOnline("page_testcaselist", "filters"));
     $("#testCaseListLabel").html(doc.getDocOnline("page_testcaselist", "testcaselist"));
@@ -261,6 +264,9 @@ function confirmTestCaseModalHandler(mode) {
             status: data.status,
             targetRev: data.targetRev,
             targetSprint: data.targetSprint,
+            conditionOper: data.conditionOper,
+            conditionVal1: data.conditionVal1,
+            conditionVal2: data.conditionVal2,
             ticket: data.ticket,
             toRev: data.toRev,
             toSprint: data.toSprint,
@@ -272,6 +278,7 @@ function confirmTestCaseModalHandler(mode) {
             if (getAlertType(data.messageType) === "success") {
                 var oTable = $("#testCaseTable").dataTable();
                 oTable.fnDraw(true);
+                $('#editTestCaseModal').data("Saved",true);
                 $('#editTestCaseModal').modal('hide');
                 showMessage(data);
             } else {
@@ -386,7 +393,6 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#datemodif").prop("value", testCase.dateModif);
         formEdit.find("#actProd").prop("value", testCase.activePROD);
     } else { // DUPLICATE or ADD
-        formEdit.find("#status").prop("value", "CREATED");
         formEdit.find("#usrcreated").prop("value", "");
         formEdit.find("#datecreated").prop("value", "");
         formEdit.find("#usrmodif").prop("value", "");
@@ -401,9 +407,9 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
             appendTestList(testCase.test);
             feedTestCaseField(testCase.test, "editTestCaseModalForm");  // Calculate corresponding testcase value.
         }
-
     }
     if (isEmpty(testCase)) {
+        formEdit.find("#status").prop("value", "STANDBY");
         formEdit.find("#originalTest").prop("value", "");
         formEdit.find("#originalTestCase").prop("value", "");
         formEdit.find("#implementer").prop("value", "");
@@ -412,7 +418,7 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#project").prop("value", "");
         formEdit.find("#ticket").prop("value", "");
         formEdit.find("#function").prop("value", "");
-        formEdit.find("#group").prop("value", "");
+        formEdit.find("#group").prop("value", "AUTOMATED");
         formEdit.find("#priority").prop("value", "");
         formEdit.find("#actQA").prop("value", "Y");
         formEdit.find("#actUAT").prop("value", "Y");
@@ -422,6 +428,9 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
         tinyMCE.get('howTo').setContent("");
         formEdit.find("#active").prop("value", "Y");
         formEdit.find("#bugId").prop("value", "");
+        formEdit.find("#conditionOper").prop("value", "always");
+        formEdit.find("#conditionVal1").prop("value", "");
+        formEdit.find("#conditionVal2").prop("value", "");
         formEdit.find("#comment").prop("value", "");
     } else {
         formEdit.find("#test").prop("value", testCase.test);
@@ -445,6 +454,9 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
         tinyMCE.get('howTo').setContent(testCase.howTo);
         formEdit.find("#active").prop("value", testCase.tcActive);
         formEdit.find("#bugId").prop("value", testCase.bugID);
+        formEdit.find("#conditionOper").prop("value", testCase.conditionOper);
+        formEdit.find("#conditionVal1").prop("value", testCase.conditionVal1);
+        formEdit.find("#conditionVal2").prop("value", testCase.conditionVal1);
         formEdit.find("#comment").prop("value", testCase.comment);
     }
 
@@ -482,6 +494,9 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#toRev").prop("disabled", "disabled");
         formEdit.find("#targetSprint").prop("disabled", "disabled");
         formEdit.find("#targetRev").prop("disabled", "disabled");
+        formEdit.find("#conditionOper").prop("disabled", "disabled");
+        formEdit.find("#conditionVal1").prop("disabled", "disabled");
+        formEdit.find("#conditionVal2").prop("disabled", "disabled");
         formEdit.find("#bugId").prop("readonly", "readonly");
         formEdit.find("#comment").prop("readonly", "readonly");
         // feed the country list.
@@ -516,6 +531,9 @@ function feedTestCaseData(testCase, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#toRev").removeProp("disabled");
         formEdit.find("#targetSprint").removeProp("disabled");
         formEdit.find("#targetRev").removeProp("disabled");
+        formEdit.find("#conditionOper").removeProp("disabled");
+        formEdit.find("#conditionVal1").removeProp("disabled");
+        formEdit.find("#conditionVal2").removeProp("disabled");
         formEdit.find("#bugId").removeProp("readonly");
         formEdit.find("#comment").removeProp("readonly");
         // feed the country list.

@@ -36,6 +36,7 @@ function initPage() {
     displayInvariantList("group", "GROUP", false);
     displayInvariantList("status", "TCSTATUS", false);
     displayInvariantList("priority", "PRIORITY", false);
+    displayInvariantList("conditionOper", "TESTCASECONDITIONOPER", false);
     $('[name="origin"]').append('<option value="All">All</option>');
     displayInvariantList("origin", "ORIGIN", true);
     displayInvariantList("active", "TCACTIVE", false);
@@ -429,10 +430,6 @@ function aoColumnsFunc(countries, tableId) {
             "mRender": function (data, type, obj) {
                 var buttons = "";
 
-                var testCaseLink = '<button id="testCaseLink" class="btn btn-primary btn-inverse btn-xs margin-right5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_editScript") + '" onclick="window.open(\'./TestCase.jsp?Test=' + encodeURIComponent(obj["test"]) + '&TestCase=' + encodeURIComponent(obj["testCase"]) + '&Load=Load\', \'_blank\')">\n\
-                                    <span class="glyphicon glyphicon-new-window"></span>\n\
-                                    </button>';
                 var editEntry = '<button id="editEntry" onclick="editTestCaseClick(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\');"\n\
                                 class="editEntry btn btn-default btn-xs margin-right5" \n\
                                 name="editEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_edit") + '" type="button">\n\
@@ -449,8 +446,8 @@ function aoColumnsFunc(countries, tableId) {
                                         class="duplicateEntry btn btn-default btn-xs margin-right5" \n\
                                         name="duplicateEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_duplicate") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-duplicate"></span></button>';
-                var testCaseBetaLink = '<button id="testCaseBetaLink" class="btn btn-warning btn-xs margin-right5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_editScript") + ' (beta page)" onclick="window.open(\'./TestCaseScript.jsp?test=' + encodeURIComponent(obj["test"]) + '&testcase=' + encodeURIComponent(obj["testCase"]) + '\', \'_blank\')">\n\
+                var editScript = '<button id="testCaseBetaLink" class="btn btn-warning btn-xs margin-right5"\n\
+                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_editScript") + '" onclick="window.open(\'./TestCaseScript.jsp?test=' + encodeURIComponent(obj["test"]) + '&testcase=' + encodeURIComponent(obj["testCase"]) + '\', \'_blank\')">\n\
                                     <span class="glyphicon glyphicon-new-window"></span>\n\
                                     </button>';
                 var runTest = '<button id="runTest" class="btn btn-default btn-xs margin-right5"\n\
@@ -468,8 +465,7 @@ function aoColumnsFunc(countries, tableId) {
                     buttons += deleteEntry;
                 }
                 buttons += runTest;
-                buttons += testCaseLink;
-                buttons += testCaseBetaLink;
+                buttons += editScript;
 
 
 
@@ -499,7 +495,7 @@ function aoColumnsFunc(countries, tableId) {
             "render": function (data, type, full, meta) {
                 var labelValue = '';
                 $.each(data, function (i, e) {
-                    labelValue += '<div style="float:left"><span class="label label-primary" onclick="filterOnLabel(this)" style="cursor:pointer;background-color:' + e.color + '">' + e.name + '</span></div> ';
+                    labelValue += '<div style="float:left"><span class="label label-primary" onclick="filterOnLabel(this)" style="cursor:pointer;background-color:' + e.color + '" data-toggle="tooltip" title="' + e.description + '">' + e.name + '</span></div> ';
                 });
                 return labelValue;
             }

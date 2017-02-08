@@ -185,7 +185,12 @@
                                 if (data.result === "NotExecuted"){
                                     return "<a target='_blank' class='" + data.result + "F' href='RunTests.jsp?Test="+full[0]+"&TestCase="+full[1]+"&Country="+data.country+"'>"+data.country+"</a>";
                                 } else {
-                                    return "<a target='_blank' class='" + data.result + "F' href='ExecutionDetail2.jsp?executionId=" + data.execID + "'>" + data.result + "</a>";
+                                    var data = getParameter("cerberus_executiondetail_use");
+                                    if(data.value == "N"){
+                                        return "<a target='_blank' class='" + data.result + "F' href='ExecutionDetail.jsp?id_tc=" + data.execID + "'>" + data.result + "</a>";
+                                    }else{
+                                        return "<a target='_blank' class='" + data.result + "F' href='ExecutionDetail2.jsp?executionId=" + data.execID + "'>" + data.result + "</a>";
+                                    }
                                 }
                             } else{
                                 return "";
@@ -213,7 +218,7 @@
                     },
                     {"aTargets": ['testCaseColumn'],
                         "mRender": function (data, type, full) {
-                            return "<a href='TestCase.jsp?Load=Load&Test="+full[0]+"&TestCase="+data+"' target='_blank'>"+data+"</a>";
+                            return "<a href='TestCaseScript.jsp?test="+full[0]+"&testcase="+data+"' target='_blank'>"+data+"</a>";
                         }
                     },
                     {"aTargets": ['TCComment'],
@@ -377,6 +382,30 @@
             zTop: 98
         });
     }
+
+        function getParameter(param,sys,forceReload){
+            var result;
+            var cacheEntryName = "PARAMETER_"+param;
+            if (forceReload) {
+                sessionStorage.removeItem(cacheEntryName);
+            }
+            var system = sys!=undefined?"&system="+sys:"";
+            var parameter = JSON.parse(sessionStorage.getItem(cacheEntryName));
+            if(parameter === null){
+                $.ajax({
+                    url: "ReadParameter?param="+param+system,
+                    data: {},
+                    async: false,
+                    success: function (data) {
+                        sessionStorage.setItem(cacheEntryName,JSON.stringify(data.contentTable))
+                        result = data.contentTable;
+                    }
+                });
+            }else{
+                result = parameter;
+            }
+            return result;
+        }
 
     function compareArrays(arr1, arr2) {
         return $(arr1).not(arr2).length == 0 && $(arr2).not(arr1).length == 0

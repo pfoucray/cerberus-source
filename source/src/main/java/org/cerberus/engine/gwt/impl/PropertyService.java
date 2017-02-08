@@ -19,7 +19,6 @@
  */
 package org.cerberus.engine.gwt.impl;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,17 +30,16 @@ import org.apache.log4j.Level;
 import org.cerberus.engine.entity.Identifier;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.crud.entity.SoapLibrary;
+import org.cerberus.crud.entity.AppService;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.crud.entity.TestCaseExecution;
 import org.cerberus.crud.entity.TestCaseExecutionData;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
-import org.cerberus.crud.entity.TestCaseStepExecution;
 import org.cerberus.crud.entity.TestDataLib;
-import org.cerberus.crud.entity.*;
 import org.cerberus.crud.factory.IFactoryTestCaseExecutionData;
 import org.cerberus.crud.service.*;
 import org.cerberus.engine.entity.SOAPExecution;
+import org.cerberus.engine.gwt.IVariableService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusEventException;
 import org.cerberus.exception.CerberusException;
@@ -56,7 +54,6 @@ import org.cerberus.service.webdriver.IWebDriverService;
 import org.cerberus.service.xmlunit.IXmlUnitService;
 import org.cerberus.service.datalib.IDataLibService;
 import org.cerberus.service.groovy.IGroovyService;
-import org.cerberus.util.DateUtil;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SoapUtil;
 import org.cerberus.util.StringUtil;
@@ -83,7 +80,7 @@ public class PropertyService implements IPropertyService {
     @Autowired
     private ISqlLibraryService sqlLibraryService;
     @Autowired
-    private ISoapLibraryService soapLibraryService;
+    private IAppServiceService appServiceService;
     @Autowired
     private ITestDataService testDataService;
     @Autowired
@@ -112,6 +109,8 @@ public class PropertyService implements IPropertyService {
     private IDataLibService dataLibService;
     @Autowired
     private ILogEventService logEventService;
+    @Autowired
+    private IVariableService variableService;
 
     /**
      * The property variable {@link Pattern}
@@ -119,37 +118,13 @@ public class PropertyService implements IPropertyService {
     public static final Pattern PROPERTY_VARIABLE_PATTERN = Pattern.compile("%[^%]+%");
 
     @Override
-    public String decodeValueWithExistingProperties(String stringToDecode, TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException {
-        TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
-        TestCaseStepExecution tCSExecution = testCaseStepActionExecution.getTestCaseStepExecution();
-        String test = testCaseStepActionExecution.getTest();
-        String testCase = testCaseStepActionExecution.getTestCase();
-        String usedTest = tCSExecution.getUseStepTest();
-        String usedTestCase = tCSExecution.getUseStepTestCase();
+    public String decodeStringWithExistingProperties(String stringToDecode, TestCaseExecution tCExecution, TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException {
         String country = tCExecution.getCountry();
         long now = new Date().getTime();
         String stringToDecodeInit = stringToDecode;
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Starting to decode string : : " + stringToDecode);
-        }
-
-        /**
-         * Decode System Variable.
-         */
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Starting to decode (system variable) string : " + stringToDecode);
-        }
-        stringToDecode = decodeStringWithSystemVariable(stringToDecode, tCExecution);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Finished to decode (system variable). Result : " + stringToDecode);
-        }
-
-        if (!(stringToDecode.contains("%"))) { // We escape if property do not contain at least 2 % char
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Finished to decode String (no more properties to decode after system variable replace) : '" + stringToDecodeInit + "' to :'" + stringToDecode + "'");
-            }
-            return stringToDecode;
         }
 
         /**
@@ -175,7 +150,7 @@ public class PropertyService implements IPropertyService {
         List<TestCaseCountryProperties> linkedProperties = new ArrayList();
         for (String internalProperty : internalPropertiesFromStringToDecode) { // Looping on potential properties in string to decode.
             List<TestCaseCountryProperties> newLinkedProperties = new ArrayList();
-            newLinkedProperties = this.getListOfPropertiesLinkedToProperty(test, testCase, country, internalProperty, usedTest, usedTestCase, new ArrayList(), tcProperties);
+            newLinkedProperties = this.getListOfPropertiesLinkedToProperty(country, internalProperty, new ArrayList(), tcProperties);
             linkedProperties.addAll(newLinkedProperties);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Property " + internalProperty + " need calculation of these (" + newLinkedProperties.size() + ") property(ies) " + newLinkedProperties);
@@ -217,8 +192,8 @@ public class PropertyService implements IPropertyService {
             /*
              * If not already calculated, or calculateProperty, then calculate it and insert or update it.
              */
-            if (tecd.getPropertyResultMessage().getCode() == MessageEventEnum.PROPERTY_PENDING.getCode()) {
-                calculateProperty(tecd, testCaseStepActionExecution, eachTccp, forceCalculation);
+            if (MessageEventEnum.PROPERTY_PENDING.equals(tecd.getPropertyResultMessage().getSource())) {
+                calculateProperty(tecd, tCExecution, testCaseStepActionExecution, eachTccp, forceCalculation);
                 //saves the result 
                 try {
                     testCaseExecutionDataService.convert(testCaseExecutionDataService.save(tecd));
@@ -242,9 +217,11 @@ public class PropertyService implements IPropertyService {
             //then we notify the execution
             if (tecd.getPropertyResultMessage().getCodeString().equals("FA")
                     || tecd.getPropertyResultMessage().getCodeString().equals("NA")) {
-                testCaseStepActionExecution.setStopExecution(tecd.isStopExecution());
-                testCaseStepActionExecution.setActionResultMessage(tecd.getPropertyResultMessage());
-                testCaseStepActionExecution.setExecutionResultMessage(new MessageGeneral(tecd.getPropertyResultMessage().getMessage()));
+                if (!(testCaseStepActionExecution == null)) {
+                    testCaseStepActionExecution.setStopExecution(tecd.isStopExecution());
+                    testCaseStepActionExecution.setActionResultMessage(tecd.getPropertyResultMessage());
+                    testCaseStepActionExecution.setExecutionResultMessage(new MessageGeneral(tecd.getPropertyResultMessage().getMessage()));
+                }
             }
 //            }
             /**
@@ -301,7 +278,7 @@ public class PropertyService implements IPropertyService {
 
     }
 
-    private List<TestCaseCountryProperties> getListOfPropertiesLinkedToProperty(String test, String testCase, String country, String property, String usedTest, String usedTestCase, List<String> crossedProperties, List<TestCaseCountryProperties> propertieOfTestcase) {
+    private List<TestCaseCountryProperties> getListOfPropertiesLinkedToProperty(String country, String property, List<String> crossedProperties, List<TestCaseCountryProperties> propertieOfTestcase) {
         List<TestCaseCountryProperties> result = new ArrayList();
         TestCaseCountryProperties testCaseCountryProperty = null;
         /*
@@ -365,80 +342,11 @@ public class PropertyService implements IPropertyService {
         allProperties.addAll(propertiesValue2);
 
         for (String internalProperty : allProperties) {
-            result.addAll(getListOfPropertiesLinkedToProperty(test, testCase, country, internalProperty, usedTest, usedTestCase, crossedProperties, propertieOfTestcase));
+            result.addAll(getListOfPropertiesLinkedToProperty(country, internalProperty, crossedProperties, propertieOfTestcase));
         }
         result.add(testCaseCountryProperty);
 
         return result;
-    }
-
-    private String decodeStringWithSystemVariable(String stringToDecode, TestCaseExecution tCExecution) {
-        /**
-         * Trying to replace by system environment variables from Execution.
-         */
-        stringToDecode = stringToDecode.replace("%SYS_SYSTEM%", tCExecution.getApplicationObj().getSystem());
-        stringToDecode = stringToDecode.replace("%SYS_APPLI%", tCExecution.getApplicationObj().getApplication());
-        stringToDecode = stringToDecode.replace("%SYS_BROWSER%", tCExecution.getBrowser());
-        stringToDecode = stringToDecode.replace("%SYS_APP_DOMAIN%", tCExecution.getCountryEnvironmentParameters().getDomain());
-        stringToDecode = stringToDecode.replace("%SYS_APP_HOST%", tCExecution.getCountryEnvironmentParameters().getIp());
-        stringToDecode = stringToDecode.replace("%SYS_APP_VAR1%", tCExecution.getCountryEnvironmentParameters().getVar1());
-        stringToDecode = stringToDecode.replace("%SYS_APP_VAR2%", tCExecution.getCountryEnvironmentParameters().getVar2());
-        stringToDecode = stringToDecode.replace("%SYS_APP_VAR3%", tCExecution.getCountryEnvironmentParameters().getVar3());
-        stringToDecode = stringToDecode.replace("%SYS_APP_VAR4%", tCExecution.getCountryEnvironmentParameters().getVar4());
-        stringToDecode = stringToDecode.replace("%SYS_ENV%", tCExecution.getEnvironmentData());
-        stringToDecode = stringToDecode.replace("%SYS_ENVGP%", tCExecution.getEnvironmentDataObj().getGp1());
-        stringToDecode = stringToDecode.replace("%SYS_COUNTRY%", tCExecution.getCountry());
-        stringToDecode = stringToDecode.replace("%SYS_COUNTRYGP1%", tCExecution.getCountryObj().getGp1());
-        stringToDecode = stringToDecode.replace("%SYS_TEST%", tCExecution.getTest());
-        stringToDecode = stringToDecode.replace("%SYS_TESTCASE%", tCExecution.getTestCase());
-        stringToDecode = stringToDecode.replace("%SYS_SSIP%", tCExecution.getSeleniumIP());
-        stringToDecode = stringToDecode.replace("%SYS_SSPORT%", tCExecution.getSeleniumPort());
-        stringToDecode = stringToDecode.replace("%SYS_TAG%", tCExecution.getTag());
-        stringToDecode = stringToDecode.replace("%SYS_EXECUTIONID%", String.valueOf(tCExecution.getId()));
-        stringToDecode = stringToDecode.replace("%SYS_EXESTART%", String.valueOf(new Timestamp(tCExecution.getStart())));
-        stringToDecode = stringToDecode.replace("%SYS_EXESTORAGEURL%", recorderService.getStorageSubFolderURL(tCExecution.getId()));
-        
-        /**
-         * Trying to replace by system environment variables from Step Execution .
-         */
-        if (stringToDecode.contains("%SYS_STEP.")) {
-            if (tCExecution.getTestCaseStepExecutionAnswerList() != null) {
-                if (tCExecution.getTestCaseStepExecutionAnswerList() != null && tCExecution.getTestCaseStepExecutionAnswerList().getDataList() != null) {
-                    String syntaxToReplace = "";
-                    for (Object testCaseStepExecution : tCExecution.getTestCaseStepExecutionAnswerList().getDataList()) {
-                        TestCaseStepExecution tcse = (TestCaseStepExecution) testCaseStepExecution;
-                        syntaxToReplace = "%SYS_STEP." + tcse.getSort() + ".RETURNCODE%";
-                        stringToDecode = stringToDecode.replace(syntaxToReplace, tcse.getReturnCode());
-                    }
-                }
-            }
-        }
-
-        /**
-         * Trying to replace date variables .
-         */
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-yyyy%", DateUtil.getTodayFormat("yyyy"));
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-MM%", DateUtil.getTodayFormat("MM"));
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-dd%", DateUtil.getTodayFormat("dd"));
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-doy%", DateUtil.getTodayFormat("D"));
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-HH%", DateUtil.getTodayFormat("HH"));
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-mm%", DateUtil.getTodayFormat("mm"));
-        stringToDecode = stringToDecode.replace("%SYS_TODAY-ss%", DateUtil.getTodayFormat("ss"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-yyyy%", DateUtil.getYesterdayFormat("yyyy"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-MM%", DateUtil.getYesterdayFormat("MM"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-dd%", DateUtil.getYesterdayFormat("dd"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-doy%", DateUtil.getYesterdayFormat("D"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-HH%", DateUtil.getYesterdayFormat("HH"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-mm%", DateUtil.getYesterdayFormat("mm"));
-        stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-ss%", DateUtil.getYesterdayFormat("ss"));
-
-        /**
-         * Trying to replace timing variables .
-         */
-        stringToDecode = stringToDecode.replace("%SYS_ELAPSED-EXESTART%", "To Be Implemented");
-        stringToDecode = stringToDecode.replace("%SYS_ELAPSED-STEPSTART%", "To Be Implemented");
-
-        return stringToDecode;
     }
 
     private String decodeStringWithAlreadyCalculatedProperties(String stringToReplace, TestCaseExecution tCExecution) {
@@ -593,28 +501,28 @@ public class PropertyService implements IPropertyService {
         return item;
     }
 
-    private void calculateProperty(TestCaseExecutionData testCaseExecutionData, TestCaseStepActionExecution testCaseStepActionExecution,
+    private void calculateProperty(TestCaseExecutionData testCaseExecutionData, TestCaseExecution tCExecution, TestCaseStepActionExecution testCaseStepActionExecution,
             TestCaseCountryProperties testCaseCountryProperty, boolean forceRecalculation) {
         testCaseExecutionData.setStart(new Date().getTime());
         MessageEvent res;
+        String test = tCExecution.getTest();
+        String testCase = tCExecution.getTestCase();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Starting to calculate Property : '" + testCaseCountryProperty.getProperty() + "'");
         }
 
-        TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
-
         /**
          * Decode Property replacing properties encapsulated with %
          */
         if (testCaseCountryProperty.getValue1().contains("%")) {
-            String decodedValue = decodeStringWithSystemVariable(testCaseCountryProperty.getValue1(), tCExecution);
+            String decodedValue = variableService.decodeStringWithSystemVariable(testCaseCountryProperty.getValue1(), tCExecution);
             decodedValue = this.decodeStringWithAlreadyCalculatedProperties(decodedValue, tCExecution);
             testCaseExecutionData.setValue1(decodedValue);
         }
 
         if (testCaseCountryProperty.getValue2() != null && testCaseCountryProperty.getValue2().contains("%")) {
-            String decodedValue = decodeStringWithSystemVariable(testCaseCountryProperty.getValue2(), tCExecution);
+            String decodedValue = variableService.decodeStringWithSystemVariable(testCaseCountryProperty.getValue2(), tCExecution);
             decodedValue = this.decodeStringWithAlreadyCalculatedProperties(decodedValue, tCExecution);
             testCaseExecutionData.setValue2(decodedValue);
         }
@@ -634,12 +542,12 @@ public class PropertyService implements IPropertyService {
         boolean forced_retry = false;
         String forced_retry_message = "";
         if (!(retries == 0)) {
-            int maxretry = parameterService.getParameterByKey("cerberus_property_maxretry", "", 50);
+            int maxretry = parameterService.getParameterIntegerByKey("cerberus_property_maxretry", "", 50);
             if (retries > maxretry) {
                 retries = maxretry;
                 forced_retry = true;
             }
-            int maxtotalduration = parameterService.getParameterByKey("cerberus_property_maxretrytotalduration", "", 1800000);
+            int maxtotalduration = parameterService.getParameterIntegerByKey("cerberus_property_maxretrytotalduration", "", 1800000);
             if (periodms > maxtotalduration) {
                 periodms = maxtotalduration;
                 forced_retry = true;
@@ -728,8 +636,8 @@ public class PropertyService implements IPropertyService {
                     res = testCaseExecutionData.getPropertyResultMessage();
                     res.setDescription(MESSAGE_DEPRECATED + " " + res.getDescription());
                     testCaseExecutionData.setPropertyResultMessage(res);
-                    logEventService.createPrivateCalls("ENGINE", TestCaseCountryProperties.TYPE_EXECUTESOAPFROMLIB, MESSAGE_DEPRECATED + " Deprecated Property triggered by TestCase : ['" + testCaseStepActionExecution.getTest() + "|" + testCaseStepActionExecution.getTestCase() + "']");
-                    LOG.warn(MESSAGE_DEPRECATED + " Deprecated Property " + TestCaseCountryProperties.TYPE_EXECUTESOAPFROMLIB + " triggered by TestCase : ['" + testCaseStepActionExecution.getTest() + "'|'" + testCaseStepActionExecution.getTestCase() + "']");
+                    logEventService.createPrivateCalls("ENGINE", TestCaseCountryProperties.TYPE_EXECUTESOAPFROMLIB, MESSAGE_DEPRECATED + " Deprecated Property triggered by TestCase : ['" + test + "|" + testCase + "']");
+                    LOG.warn(MESSAGE_DEPRECATED + " Deprecated Property " + TestCaseCountryProperties.TYPE_EXECUTESOAPFROMLIB + " triggered by TestCase : ['" + test + "'|'" + testCase + "']");
                     break;
 
                 case TestCaseCountryProperties.TYPE_EXECUTESQLFROMLIB: // DEPRECATED
@@ -737,8 +645,8 @@ public class PropertyService implements IPropertyService {
                     res = testCaseExecutionData.getPropertyResultMessage();
                     res.setDescription(MESSAGE_DEPRECATED + " " + res.getDescription());
                     testCaseExecutionData.setPropertyResultMessage(res);
-                    logEventService.createPrivateCalls("ENGINE", TestCaseCountryProperties.TYPE_EXECUTESQLFROMLIB, MESSAGE_DEPRECATED + " Deprecated Property triggered by TestCase : ['" + testCaseStepActionExecution.getTest() + "|" + testCaseStepActionExecution.getTestCase() + "']");
-                    LOG.warn(MESSAGE_DEPRECATED + " Deprecated Property " + TestCaseCountryProperties.TYPE_EXECUTESQLFROMLIB + " triggered by TestCase : ['" + testCaseStepActionExecution.getTest() + "'|'" + testCaseStepActionExecution.getTestCase() + "']");
+                    logEventService.createPrivateCalls("ENGINE", TestCaseCountryProperties.TYPE_EXECUTESQLFROMLIB, MESSAGE_DEPRECATED + " Deprecated Property triggered by TestCase : ['" + test + "|" + testCase + "']");
+                    LOG.warn(MESSAGE_DEPRECATED + " Deprecated Property " + TestCaseCountryProperties.TYPE_EXECUTESQLFROMLIB + " triggered by TestCase : ['" + test + "'|'" + testCase + "']");
                     break;
 
                 case TestCaseCountryProperties.TYPE_GETFROMTESTDATA: // DEPRECATED
@@ -746,8 +654,8 @@ public class PropertyService implements IPropertyService {
                     res = testCaseExecutionData.getPropertyResultMessage();
                     res.setDescription(MESSAGE_DEPRECATED + " " + res.getDescription());
                     testCaseExecutionData.setPropertyResultMessage(res);
-                    logEventService.createPrivateCalls("ENGINE", TestCaseCountryProperties.TYPE_GETFROMTESTDATA, MESSAGE_DEPRECATED + " Deprecated Property triggered by TestCase : ['" + testCaseStepActionExecution.getTest() + "|" + testCaseStepActionExecution.getTestCase() + "']");
-                    LOG.warn(MESSAGE_DEPRECATED + " Deprecated Property " + TestCaseCountryProperties.TYPE_GETFROMTESTDATA + " triggered by TestCase : ['" + testCaseStepActionExecution.getTest() + "'|'" + testCaseStepActionExecution.getTestCase() + "']");
+                    logEventService.createPrivateCalls("ENGINE", TestCaseCountryProperties.TYPE_GETFROMTESTDATA, MESSAGE_DEPRECATED + " Deprecated Property triggered by TestCase : ['" + test + "|" + testCase + "']");
+                    LOG.warn(MESSAGE_DEPRECATED + " Deprecated Property " + TestCaseCountryProperties.TYPE_GETFROMTESTDATA + " triggered by TestCase : ['" + test + "'|'" + testCase + "']");
                     break;
 
                 default:
@@ -993,8 +901,8 @@ public class PropertyService implements IPropertyService {
     private TestCaseExecutionData property_executeSoapFromLib(TestCaseExecutionData testCaseExecutionData, TestCaseExecution tCExecution, TestCaseStepActionExecution testCaseStepActionExecution, TestCaseCountryProperties testCaseCountryProperty, boolean forceCalculation) {
         String result = null;
         try {
-            SoapLibrary soapLib = this.soapLibraryService.findSoapLibraryByKey(testCaseExecutionData.getValue1());
-            if (soapLib != null) {
+            AppService appService = this.appServiceService.findAppServiceByKey(testCaseExecutionData.getValue1());
+            if (appService != null) {
                 String attachement = "";//TODO implement this feature
                 //TODO implement the executeSoapFromLib
                 /*if (!testCaseExecutionData.getValue2().isEmpty()){
@@ -1002,18 +910,18 @@ public class PropertyService implements IPropertyService {
                  }else{
                  attachement = soapLib.getAttachmentUrl();
                  }*/
-                String decodedEnveloppe = soapLib.getEnvelope();
-                String decodedServicePath = soapLib.getServicePath();
-                String decodedMethod = soapLib.getMethod();
+                String decodedEnveloppe = appService.getServiceRequest();
+                String decodedServicePath = appService.getServicePath();
+                String decodedMethod = appService.getOperation();
 
-                if (soapLib.getEnvelope().contains("%")) {
-                    decodedEnveloppe = decodeValueWithExistingProperties(soapLib.getEnvelope(), testCaseStepActionExecution, false);
+                if (appService.getServiceRequest().contains("%")) {
+                    decodedEnveloppe = variableService.decodeStringCompletly(appService.getServiceRequest(), tCExecution, testCaseStepActionExecution, false);
                 }
-                if (soapLib.getServicePath().contains("%")) {
-                    decodedServicePath = decodeValueWithExistingProperties(soapLib.getServicePath(), testCaseStepActionExecution, false);
+                if (appService.getServicePath().contains("%")) {
+                    decodedServicePath = variableService.decodeStringCompletly(appService.getServicePath(), tCExecution, testCaseStepActionExecution, false);
                 }
-                if (soapLib.getMethod().contains("%")) {
-                    decodedMethod = decodeValueWithExistingProperties(soapLib.getMethod(), testCaseStepActionExecution, false);
+                if (appService.getOperation().contains("%")) {
+                    decodedMethod = variableService.decodeStringCompletly(appService.getOperation(), tCExecution, testCaseStepActionExecution, false);
                 }
 
                 //Call Soap and set LastSoapCall of the testCaseExecution.
@@ -1027,7 +935,7 @@ public class PropertyService implements IPropertyService {
                 if (soapCall.isCodeEquals(200)) {
                     SOAPExecution lastSoapCalled = (SOAPExecution) tCExecution.getLastSOAPCalled().getItem();
                     String xmlResponse = SoapUtil.convertSoapMessageToString(lastSoapCalled.getSOAPResponse());
-                    result = xmlUnitService.getFromXml(xmlResponse, null, soapLib.getParsingAnswer());
+                    result = xmlUnitService.getFromXml(xmlResponse, null, appService.getParsingAnswer());
                 }
                 if (result != null) {
                     testCaseExecutionData.setValue(result);
@@ -1222,18 +1130,18 @@ public class PropertyService implements IPropertyService {
             try {
                 if (testDataLib.getType().equals(TestDataLib.TYPE_SOAP)) {
                     //check if the servicepath contains properties that neeed to be calculated
-                    String decodedServicePath = decodeValueWithExistingProperties(testDataLib.getServicePath(), testCaseStepActionExecution, false);
+                    String decodedServicePath = variableService.decodeStringCompletly(testDataLib.getServicePath(), tCExecution, testCaseStepActionExecution, false);
                     testDataLib.setServicePath(decodedServicePath);
                     //check if the method contains properties that neeed to be calculated
-                    String decodedMethod = decodeValueWithExistingProperties(testDataLib.getMethod(), testCaseStepActionExecution, false);
+                    String decodedMethod = variableService.decodeStringCompletly(testDataLib.getMethod(), tCExecution, testCaseStepActionExecution, false);
                     testDataLib.setMethod(decodedMethod);
                     //check if the envelope contains properties that neeed to be calculated
-                    String decodedEnvelope = decodeValueWithExistingProperties(testDataLib.getEnvelope(), testCaseStepActionExecution, false);
+                    String decodedEnvelope = variableService.decodeStringCompletly(testDataLib.getEnvelope(), tCExecution, testCaseStepActionExecution, false);
                     testDataLib.setEnvelope(decodedEnvelope);
 
                 } else if (testDataLib.getType().equals(TestDataLib.TYPE_SQL)) {
                     //check if the script contains properties that neeed to be calculated
-                    String decodedScript = decodeValueWithExistingProperties(testDataLib.getScript(), testCaseStepActionExecution, false);
+                    String decodedScript = variableService.decodeStringCompletly(testDataLib.getScript(), tCExecution, testCaseStepActionExecution, false);
                     testDataLib.setScript(decodedScript);
 
                 }

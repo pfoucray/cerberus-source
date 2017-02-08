@@ -138,11 +138,18 @@ td
     margin-left:5px;
 }
 
+.marginLeft25{
+    margin-left:25px;
+}
+
 .marginLeft0{
     margin-left:0px;
 }
 .paddingLeft0{
     padding-left:0px;
+}
+.paddingTop30{
+    padding-top:30px;
 }
 /*margins*/
 .marginTop20{
@@ -680,3 +687,9 @@ img.selectedPicture{
     outline: 0 none;
 }
 
+@media (min-width: 768px) {
+    .modal-xl {
+        width: 90%;
+        max-width: 1200px;
+    }
+}

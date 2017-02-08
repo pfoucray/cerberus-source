@@ -101,8 +101,9 @@ function displayInvariantList(selectName, idName, forceReload, defaultValue, add
                 sessionStorage.setItem(cacheEntryName, JSON.stringify(data));
                 for (var index = 0; index < list.length; index++) {
                     var item = list[index].value;
+                    var desc = list[index].value + " - " + list[index].description;
 
-                    $("[name='" + selectName + "']").append($('<option></option>').text(item).val(item));
+                    $("[name='" + selectName + "']").append($('<option></option>').text(desc).val(item));
                 }
                 if (defaultValue !== undefined) {
                     $("[name='" + selectName + "']").val(defaultValue);
@@ -112,8 +113,9 @@ function displayInvariantList(selectName, idName, forceReload, defaultValue, add
     } else {
         for (var index = 0; index < list.length; index++) {
             var item = list[index].value;
+            var desc = list[index].value + " - " + list[index].description;
 
-            $("[name='" + selectName + "']").append($('<option></option>').text(item).val(item));
+            $("[name='" + selectName + "']").append($('<option></option>').text(desc).val(item));
         }
         if (defaultValue !== undefined) {
             $("[name='" + selectName + "']").val(defaultValue);
@@ -168,8 +170,11 @@ function displayDeployTypeList(selectName, defaultValue) {
  */
 function displayApplicationList(selectName, system, defaultValue) {
     var myData = "";
-    if (system !== "") {
+    if ((system !== "") && (system !== undefined) && (system !== null)) {
         myData = "system=" + system;
+    }
+    if (defaultValue !== undefined && defaultValue !== null) {
+        $("[name='" + selectName + "']").append($('<option></option>').text(defaultValue).val(defaultValue));
     }
     $.when($.getJSON("ReadApplication", myData)).then(function (data) {
         for (var option in data.contentTable) {
@@ -329,9 +334,12 @@ function displayUniqueEnvList(selectName, system, defaultValue) {
                 text = text + " [Currently Disabled]";
             $("[name='" + selectName + "']").append($('<option></option>').text(text).val(data.contentTable[option].environment));
         }
-
-        if (defaultValue !== undefined) {
-            $("[name='" + selectName + "']").val(defaultValue);
+        if (data.contentTable.length <= 1) { // If only 1 environment, we select it directly. 
+            $("[name='" + selectName + "']").val(data.contentTable[0].environment);
+        } else { // More than 1 value, we may select the default value.
+            if (defaultValue !== undefined) {
+                $("[name='" + selectName + "']").val(defaultValue);
+            }
         }
     });
 }
@@ -547,23 +555,28 @@ function getSelectDeployType(forceReload) {
 /**
  *
  */
-function getParameter(param,sys,forceReload){
-    var cacheEntryName = "PARAMETER_"+param;
+function getParameter(param, sys, forceReload) {
+    var result;
+    var cacheEntryName = "PARAMETER_" + param;
     if (forceReload) {
         sessionStorage.removeItem(cacheEntryName);
     }
-    var system = sys!=undefined?"&system="+sys:"";
-    return new Promise(function(resolve, reject){
-        var parameter = JSON.parse(sessionStorage.getItem(cacheEntryName));
-        if(parameter === null){
-            $.get("ReadParameter?param="+param+system, function(data){
-                sessionStorage.setItem(cacheEntryName,JSON.stringify(data.contentTable))
-                resolve(data.contentTable);
-            });
-        }else{
-            resolve(parameter);
-        }
-    });
+    var system = sys != undefined ? "&system=" + sys : "";
+    var parameter = JSON.parse(sessionStorage.getItem(cacheEntryName));
+    if (parameter === null) {
+        $.ajax({
+            url: "ReadParameter?param=" + param + system,
+            data: {},
+            async: false,
+            success: function (data) {
+                sessionStorage.setItem(cacheEntryName, JSON.stringify(data.contentTable))
+                result = data.contentTable;
+            }
+        });
+    } else {
+        result = parameter;
+    }
+    return result;
 }
 
 
@@ -583,7 +596,7 @@ function getAlertType(code) {
         return "warning";
     }
 
-    return code;
+    return "danger";
 }
 
 /**
@@ -786,7 +799,7 @@ function modalFormCleaner(event) {
  */
 function showModalConfirmation(handlerClickOk, title, message, hiddenField1, hiddenField2, hiddenField3, hiddenField4) {
     setDataConfirmationModal(title, message, hiddenField1, hiddenField2, hiddenField3, hiddenField4);
-    $('#confirmationModal #confirmOk').click(handlerClickOk);
+    $('#confirmationModal #confirmOk').unbind("click").click(handlerClickOk);
     clearResponseMessageMainPage();
     $('#confirmationModal').modal('show');
 }
@@ -959,7 +972,7 @@ function TableConfigurationsClientSide(divId, data, aoColumnsFunction, defineLen
  * @param {type} aaSorting - Table to define the sorting column and order. Ex : [3, 'asc']
  * @returns {TableConfigurationsServerSide}
  */
-function TableConfigurationsServerSide(divId, ajaxSource, ajaxProp, aoColumnsFunction, aaSorting) {
+function TableConfigurationsServerSide(divId, ajaxSource, ajaxProp, aoColumnsFunction, aaSorting, lengthMenu) {
     this.divId = divId;
     this.aoColumnsFunction = aoColumnsFunction;
     this.ajaxSource = ajaxSource;
@@ -967,7 +980,11 @@ function TableConfigurationsServerSide(divId, ajaxSource, ajaxProp, aoColumnsFun
 
     this.processing = true;
     this.serverSide = true;
-    this.lengthMenu = [10, 25, 50, 100];
+    if (lengthMenu === undefined) {
+        this.lengthMenu = [10, 25, 50, 100];
+    } else {
+        this.lengthMenu = lengthMenu;
+    }
     this.lengthChange = true;
     //not mandatory properties, and default values
     this.searchText = "";
@@ -1009,7 +1026,7 @@ function returnMessageHandler(response) {
 
 function showUnexpectedError(jqXHR, textStatus, errorThrown) {
     clearResponseMessageMainPage();
-    var type = getAlertType("KO");
+    var type = getAlertType(textStatus);
     var message = "";
     if (textStatus !== undefined && errorThrown !== undefined) {
         message = textStatus.toUpperCase() + " - " + errorThrown;
@@ -1054,6 +1071,7 @@ function createDataTableWithPermissions(tableConfigurations, callbackFunction, o
     configs["colVis"] = tableConfigurations.lang.colVis;
     configs["scrollX"] = tableConfigurations.scrollX;
     configs["lengthChange"] = tableConfigurations.lengthChange;
+    configs["lengthMenu"] = tableConfigurations.lengthMenu;
     configs["orderClasses"] = tableConfigurations.orderClasses;
     configs["bDeferRender"] = tableConfigurations.bDeferRender;
     configs["columnReorder"] = tableConfigurations.colreorder;
@@ -1194,14 +1212,9 @@ function createDataTableWithPermissions(tableConfigurations, callbackFunction, o
  * @return {Object} Return the dataTable object to use the api
  */
 function createDataTable(tableConfigurations, callbackFunction, userCallbackFunction, objectWaitingLayer) {
-    var paginate = "";
-    if (tableConfigurations.bPaginate) {
-        paginate = "p";
-    }
-
-    var domConf = 'RCB<"clear">lf<"pull-right"' + paginate + '>rti<"marginTop5">';
+    var domConf = 'RCB<"clear">lf<"pull-right"p>rti<"marginTop5">';
     if (!tableConfigurations.showColvis) {
-        domConf = 'l<"showInlineElement pull-left marginLeft5"f>rti<"marginTop5"' + paginate + '>';
+        domConf = 'l<"showInlineElement pull-left marginLeft5"f>rti<"marginTop5"p>';
     }
 
 
@@ -1374,7 +1387,7 @@ function showTitleWhenTextOverflow() {
     /**
      * for TH and TD, append title into div
      */
-    $('td, th').each(function () {
+    $('td, th, h4').each(function () {
         var $ele = $(this);
         //Check if text to display is bigger than the width
         if (this.offsetWidth < this.scrollWidth && $ele.get(0).innerText.trim().length > 0) {
@@ -1457,6 +1470,42 @@ function filterOnColumn(tableId, column, value) {
         if (oSettings.aoColumns[iCol].data === column) {
             oTable.api().column(iCol).search(value);
         }
+    }
+    oTable.fnDraw();
+}
+
+/**
+ * Function that apply filters on columns on values get from the URL
+ * @param {type} tableId > Id of the datatable
+ * @param {type} searchColums > Array of columns 
+ * @returns {undefined}
+ */
+function applyFiltersOnMultipleColumns(tableId, searchColumns) {
+
+    /**
+     * Loop on searchColumns and get Parameter values >> Build an array of object
+     */
+    var searchArray = new Array;
+    for (var searchColumn = 0; searchColumn < searchColumns.length; searchColumn++) {
+        var param = GetURLParameters(searchColumns[searchColumn]);
+        var searchObject = {
+            param: searchColumns[searchColumn],
+            values: param};
+        searchArray.push(searchObject);
+    }
+    /**
+     * Apply the filter to the table
+     */
+    var oTable = $('#' + tableId).dataTable();
+    resetFilters(oTable);
+    var oSettings = oTable.fnSettings();
+    for (iCol = 0; iCol < oSettings.aoPreSearchCols.length; iCol++) {
+        for (sCol = 0; sCol < searchArray.length; sCol++) {
+            if (oSettings.aoColumns[iCol].data === searchArray[sCol].param) {
+                oTable.api().column(iCol).search(searchArray[sCol].values);
+            }
+        }
+
     }
     oTable.fnDraw();
 }
@@ -1929,6 +1978,25 @@ function GetURLParameter(sParam, defaultValue) {
 }
 
 /**
+ * Get the parameter passed in the url Example : url?param=value
+ * @param {String} sParam parameter you want to get value from
+ * @returns {GetURLParameter.sParameterName} the value or defaultValue does not exist in URL or null if not found in URL and no default value specified.
+ */
+function GetURLParameters(sParam) {
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+    var result = new Array;
+
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] === sParam) {
+            result.push(decodeURIComponent(sParameterName[1]));
+        }
+    }
+    return result;
+}
+
+/**
  * Add an browser history entry only if different from the current one.
  * @param {string} sUrl Url to insert in the history.
  * @returns {void}
@@ -1990,6 +2058,9 @@ function bindToggleCollapse() {
         if (localStorage.getItem(this.id) === "false") {
             $(this).removeClass('in');
             $(this).prev().find(".toggle").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
+        } else {
+            $(this).addClass('in');
+            $(this).prev().find(".toggle").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right");
         }
     });
 }
@@ -2035,7 +2106,12 @@ function generateExecutionLink(status, id) {
     if (status === "NE") {
         result = "./RunTests.jsp?queuedExecution=" + id;
     } else {
-        result = "./ExecutionDetail2.jsp?executionId=" + id;
+        var data = getParameter("cerberus_executiondetail_use")
+        if (data.value !== "N") {
+            result = "./ExecutionDetail2.jsp?executionId=" + id;
+        } else {
+            result = "./ExecutionDetail.jsp?id_tc=" + id;
+        }
     }
     return result;
 }
@@ -2141,95 +2217,106 @@ function autocompleteVariable(identifier, Tags) {
     }
 
     $(identifier)
-    // don't navigate away from the field on tab when selecting an item
-        .on("keydown", function (event) {
-            if (event.keyCode === $.ui.keyCode.TAB &&
-                $(this).autocomplete("instance").menu.active) {
-                event.preventDefault();
-            }
-            // We hide the message generated by autocomplete because we don't want it
-            $("span[role='status']").hide();
-        })
-        .autocomplete({
-            minLength: 1,
-            messages: {
-                noResults: '',
-                results: function () {
+            // don't navigate away from the field on tab when selecting an item
+            .on("keydown", function (event) {
+                if (event.keyCode === $.ui.keyCode.TAB &&
+                        $(this).autocomplete("instance").menu.active) {
+                    event.preventDefault();
                 }
-            },
-            create: function () {
-                $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
-                    var icon = "";
-                    if (Tags[this.currentIndexTag].addAfter != "%") {
-                        icon = "<span class='glyphicon glyphicon-chevron-right' style='margin-top:3px; float:right'></span>";
+                // We hide the message generated by autocomplete because we don't want it
+                $("span[role='status']").hide();
+            })
+            .autocomplete({
+                minLength: 1,
+                messages: {
+                    noResults: '',
+                    results: function () {
                     }
-                    return $("<li class='ui-menu-item'>")
-                        .append("<a class='ui-corner-all' tabindex='-1'>" + item.label + icon + "</a>")
-                        .appendTo(ul);
-                };
-            },
-            source: function (request, response) {
-                //Get the part of the string we want (between the last % before our cursor and the cursor)
-                var selectionStart = this.element[0].selectionStart;
-                var stringToAnalyse = this.term.substring(0, selectionStart);
-                var identifier = stringToAnalyse.substring(stringToAnalyse.lastIndexOf("%"));
-                //If there is a pair number of % it means there is no open variable that needs to be autocompleted
-                if ((this.term.match(/%/g) || []).length % 2 > 0) {
-                    //Start Iterating on Tags
-                    var tag = 0;
+                },
+                open: function () {
+                    //If autocomplete is in modal, needs to be upper the modal
+                    if ($(this).closest($(".modal")).length > 0) {
+                        $(this).autocomplete('widget').css('z-index', 1050);
+                    }
+                    return false;
+                },
+                create: function () {
+                    $(this).data('ui-autocomplete')._renderItem = function (ul, item) {
+                        var icon = "";
+                        if (Tags[this.currentIndexTag].addAfter != "%") {
+                            icon = "<span class='ui-corner-all glyphicon glyphicon-chevron-right' tabindex='-1' style='margin-top:3px; float:right;'></span>";
+                        }
+                        return $("<li class='ui-menu-item'>")
+                                .append("<a class='ui-corner-all' tabindex='-1' style='height:100%'><span style='float:left;'>" + item.label + "</span>" + icon + "<span style='clear: both; display: block;'></span></a>")
+                                .appendTo(ul);
+                    };
+                },
+                source: function (request, response) {
+                    //Get the part of the string we want (between the last % before our cursor and the cursor)
+                    var selectionStart = this.element[0].selectionStart;
+                    var stringToAnalyse = this.term.substring(0, selectionStart);
+                    var identifier = stringToAnalyse.substring(stringToAnalyse.lastIndexOf("%"));
+                    //If there is a pair number of % it means there is no open variable that needs to be autocompleted
+                    if ((this.term.match(/%/g) || []).length % 2 > 0) {
+                        //Start Iterating on Tags
+                        var tag = 0;
+                        var found = false;
+                        while (tag < Tags.length && !found) {
+                            //If We find the separator, then we filter with the already written part
+                            if ((identifier.match(new RegExp(Tags[tag].regex)) || []).length > 0) {
+                                this.currentIndexTag = tag;
+                                var arrayToDisplay = $.ui.autocomplete.filter(
+                                        Tags[tag].array, extractLast(identifier, Tags[tag].regex));
+                                if (Tags[tag].isCreatable && extractLast(identifier, Tags[tag].regex) != "") {
+                                    arrayToDisplay.push(extractLast(identifier, Tags[tag].regex));
+                                }
+                                response(arrayToDisplay);
+                                found = true;
+                            }
+                            tag++;
+                        }
+                    }
+                },
+                focus: function () {
+                    // prevent value inserted on focus
+                    return false;
+                },
+                select: function (event, ui) {
+                    //Get the part of the string we want (between the last % before our cursor and the cursor)
+                    var stringToAnalyse = this.value.substring(0, this.selectionStart);
+                    var identifier = stringToAnalyse.substring(stringToAnalyse.lastIndexOf("%"));
+                    //Start iterating on Tags
                     var found = false;
+                    var tag = 0;
                     while (tag < Tags.length && !found) {
-                        //If We find the separator, then we filter with the already written part
+                        //If we find our separator, we compute the output
                         if ((identifier.match(new RegExp(Tags[tag].regex)) || []).length > 0) {
-                            this.currentIndexTag = tag;
-                            response($.ui.autocomplete.filter(
-                                Tags[tag].array, extractLast(identifier, Tags[tag].regex)));
+                            // remove the current input
+                            var beforeRegex = extractAllButLast(this.value.substring(0, this.selectionStart), Tags[tag].regex);
+                            var afterCursor = this.value.substring(this.selectionStart, this.value.length);
+                            // add the selected item and eventually the content to add
+                            var value = Tags[tag].addBefore + ui.item.value + Tags[tag].addAfter;
+                            //If it is the end of the variable, we automaticly add a % at the end of the line
+
+                            this.value = beforeRegex + value + afterCursor;
+                            this.setSelectionRange((beforeRegex + value).length, (beforeRegex + value).length);
+
                             found = true;
                         }
                         tag++;
                     }
+                    // We trigger input to potentially display an image if there is one
+                    $(this).trigger("input").trigger("change");
+                    return false;
+                },
+                close: function (event, ui) {
+                    val = $(this).val();
+                    $(this).autocomplete("search", val); //keep autocomplete open by
+                    //searching the same input again
+                    $(this).focus();
+                    return false;
                 }
-            },
-            focus: function () {
-                // prevent value inserted on focus
-                return false;
-            },
-            select: function (event, ui) {
-                //Get the part of the string we want (between the last % before our cursor and the cursor)
-                var stringToAnalyse = this.value.substring(0, this.selectionStart);
-                var identifier = stringToAnalyse.substring(stringToAnalyse.lastIndexOf("%"));
-                //Start iterating on Tags
-                var found = false;
-                var tag = 0;
-                while (tag < Tags.length && !found) {
-                    //If we find our separator, we compute the output
-                    if ((identifier.match(new RegExp(Tags[tag].regex)) || []).length > 0) {
-                        // remove the current input
-                        var beforeRegex = extractAllButLast(this.value.substring(0, this.selectionStart), Tags[tag].regex);
-                        var afterCursor = this.value.substring(this.selectionStart, this.value.length);
-                        // add the selected item and eventually the content to add
-                        var value = Tags[tag].addBefore + ui.item.value + Tags[tag].addAfter;
-                        //If it is the end of the variable, we automaticly add a % at the end of the line
-
-                        this.value = beforeRegex + value + afterCursor;
-                        this.setSelectionRange((beforeRegex + value).length, (beforeRegex + value).length);
-
-                        found = true;
-                    }
-                    tag++;
-                }
-                // We trigger input to potentially display an image if there is one
-                $(this).trigger("change");
-                return false;
-            },
-            close: function (event, ui) {
-                val = $(this).val();
-                $(this).autocomplete("search", val); //keep autocomplete open by
-                //searching the same input again
-                $(this).focus();
-                return false;
-            }
-        });
+            });
 }
 
 /**
@@ -2266,27 +2353,79 @@ $.extend({
 });
 
 /**
- * Auxiliary function that opens the modal that allows user to view/remove the picture associated with an action/control.
+ * Auxiliary function that opens the modal that allows user to view a picture.
+ * @param {type} title
  * @param {type} pictureUrl
- * @param {type} step
- * @param {type} action
- * @param {type} control
  * @returns {undefined}
  */
-function showPicture(pictureUrl, step, action, control) {
+function showPicture(title, pictureUrl) {
     var doc = new Doc();
-    $('#attachNewScreenshot').attr("pictureUrl", "");
-    $('#showPictureModalTitle').text(doc.getDocLabel("page_testcase_m_showPicture", "title"));
-    $('#removePictureButton').text(doc.getDocLabel("page_testcase_m_showPicture", "btn_remove"));
-    $('#closeShowPictureButton').text(doc.getDocLabel("page_global", "buttonClose"));
+    $('#showGenericModalTitle').text(title);
+    $('#closeShowGenericButton').text(doc.getDocLabel("page_global", "buttonClose"));
 
+    $('#modalContent').empty();
     //set the translations
-    $('#selectedPicture').attr("src", pictureUrl);
-    $('#showPictureModal #step').attr("value", step);
-    $('#showPictureModal #action').attr("value", action);
-    if (control !== null) {
-        $('#showPictureModal #control').attr("value", control);
+    $('#modalContent').append($('<img>').addClass("selectedPicture").attr("src", pictureUrl + "&h=400&w=800"));
+    if ($("#btnFullPicture").length > 0) {
+        $("#btnFullPicture").remove();
     }
-    $('#showPictureModal').modal('show');
-    $('#removePictureButton').hide();
+    $('#modal-footer').prepend($('<button>').attr("id", "btnFullPicture").text("Full Picture").addClass("btn btn-default").click(function () {
+        window.open(pictureUrl + "&r=true", "_blank");
+    }));
+    $('#showGenericModal').modal('show');
+}
+/**
+ * Auxiliary function that opens the modal that allows user to view a textarea.
+ * @param {type} title
+ * @param {type} text
+ * @param {type} fileUrl
+ * @returns {undefined}
+ */
+function showTextArea(title, text, fileUrl) {
+    var doc = new Doc();
+    $('#showGenericModalTitle').text(title);
+    $('#closeShowGenericButton').text(doc.getDocLabel("page_global", "buttonClose"));
+
+    $('#modalContent').empty();
+    //set the translations
+
+    var jqxhr = $.get(fileUrl, "&autoContentType=N");
+    $.when(jqxhr).then(function (data) {
+        $('#modalContent').append($("<div>").addClass("form-group").append($("<textarea>").addClass("form-control").attr("rows", "10").val(data)));
+    });
+
+    $('#modal-footer #btnFullPicture').remove();
+    $('#modal-footer').prepend($('<button>').attr("id", "btnFullPicture").text("Full File").addClass("btn btn-default").click(function () {
+        window.open(fileUrl, "_blank");
+    }));
+
+    $('#showGenericModal').modal('show');
+}
+
+/**
+ * Default options to apply when using linkify actions
+ *
+ * @see #safeLinkify(str, options)
+ */
+var DEFAULT_LINKIFY_OPTIONS = {
+    validate: {
+        email: function (value) {
+            return false;
+        },
+        url: function (value) {
+            return /^(http|ftp)s?:\/\//.test(value);
+        }
+    }
+};
+
+/**
+ * Find any potential links from the given string and replace them by real HTML link
+ *
+ * @param str the given string to format
+ * @param options (optional) options to use during find and replace process. If not given, then use #DEFAULT_LINKIFY_OPTIONS
+ * @returns {*} a new string with any potential links replaced by the HTML link value
+ * @see http://soapbox.github.io/linkifyjs/
+ */
+function safeLinkify(str, options) {
+    return str == undefined ? str : str.linkify(options == undefined ? DEFAULT_LINKIFY_OPTIONS : options);
 }

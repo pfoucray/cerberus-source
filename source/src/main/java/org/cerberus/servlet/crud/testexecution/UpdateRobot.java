@@ -93,6 +93,7 @@ public class UpdateRobot extends HttpServlet {
         String active = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("active"), "Y", charset);
         String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
         String userAgent = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("useragent"), "", charset);
+        String screenSize = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("screensize"), "", charset);
         List<RobotCapability> capabilities = (List<RobotCapability>) (request.getParameter("capabilities") == null ? Collections.emptyList() : gson.fromJson(request.getParameter("capabilities"), new TypeToken<List<RobotCapability>>(){}.getType()));
         // Securing capabilities by setting them the associated robot name
         // Check also if there is no duplicated capability
@@ -138,12 +139,6 @@ public class UpdateRobot extends HttpServlet {
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Robot platform is missing."));
-            ans.setResultMessage(msg);
-        } else if (StringUtil.isNullOrEmpty(browser)) {
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-            msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
-                    .replace("%REASON%", "Robot browser is missing."));
             ans.setResultMessage(msg);
         } else if (robotid_error) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
@@ -191,6 +186,7 @@ public class UpdateRobot extends HttpServlet {
                 robotData.setDescription(description);
                 robotData.setUserAgent(userAgent);
                 robotData.setCapabilities(capabilities);
+                robotData.setScreenSize(screenSize);
                 ans = robotService.update(robotData);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {

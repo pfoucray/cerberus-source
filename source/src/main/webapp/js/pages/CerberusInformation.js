@@ -102,7 +102,7 @@ function feedContent() {
             row.append(cel1);
             var cel1 = $("<td></td>").append(obj.test);
             row.append(cel1);
-            var cel1 = $("<td></td>").append("<a href='TestCase.jsp?Test=" + obj.test + "&TestCase=" + obj.testcase + "'>" + obj.testcase + "</a>");
+            var cel1 = $("<td></td>").append("<a href='TestCaseScript.jsp?test=" + obj.test + "&testcase=" + obj.testcase + "'>" + obj.testcase + "</a>");
             row.append(cel1);
             var cel1 = $("<td></td>").append(obj.environment);
             row.append(cel1);
@@ -115,14 +115,14 @@ function feedContent() {
             table.append(row);
         });
 
-        var table = $("#threadTableBody");
-        table.empty();
-        var row = $("<tr></tr>");
-        var cel1 = $("<td></td>").append(data.queue_in_execution + " / " + data.size_queue);
-        var cel2 = $("<td></td>").append(data.number_of_thread);
-        row.append(cel1);
-        row.append(cel2);
-        table.append(row);
+//        var table = $("#threadTableBody");
+//        table.empty();
+//        var row = $("<tr></tr>");
+//        var cel1 = $("<td></td>").append(data.queue_in_execution + " / " + data.size_queue);
+//        var cel2 = $("<td></td>").append(data.number_of_thread);
+//        row.append(cel1);
+//        row.append(cel2);
+//        table.append(row);
 
         var table = $("#databaseTableBody");
         table.empty();
@@ -167,7 +167,12 @@ function FormatedExeId(id) {
     if (id === 0) {
         return id
     } else {
-        return "<a href='ExecutionDetail2.jsp?executionId=" + id + "'>" + id + "</a>";
+        var data = getParameter("cerberus_executiondetail_use");
+        if(data.value == "N"){
+            return "<a href='ExecutionDetail.jsp?id_tc=" + id + "'>" + id + "</a>";
+        }else{
+            return "<a href='ExecutionDetail2.jsp?executionId=" + id + "'>" + id + "</a>";
+        }
     }
 }
 

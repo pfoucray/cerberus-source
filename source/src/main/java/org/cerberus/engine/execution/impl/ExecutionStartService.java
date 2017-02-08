@@ -131,9 +131,15 @@ public class ExecutionStartService implements IExecutionStartService {
         LOG.debug("Loading Test Case Information. " + tCExecution.getTest() + "-" + tCExecution.getTestCase());
         // Integrate this.loadTestCaseService.loadTestCase(tCExecution); inside with Dependency.
         try {
-            TestCase tCase = testCaseService.findTestCaseByKey(tCExecution.getTest(), tCExecution.getTestCase());
+//            TestCase tCase = testCaseService.findTestCaseByKey(tCExecution.getTest(), tCExecution.getTestCase());
+            TestCase tCase = testCaseService.convert(testCaseService.readByKey(tCExecution.getTest(), tCExecution.getTestCase()));
             if (tCase != null) {
                 tCExecution.setTestCaseObj(tCase);
+                tCExecution.setConditionOper(tCase.getConditionOper());
+                tCExecution.setConditionVal1(tCase.getConditionVal1());
+                tCExecution.setConditionVal1Init(tCase.getConditionVal1());
+                tCExecution.setConditionVal2(tCase.getConditionVal2());
+                tCExecution.setConditionVal2Init(tCase.getConditionVal2());
             } else {
                 throw new CerberusException(new MessageGeneral(MessageGeneralEnum.NO_DATA_FOUND));
             }
@@ -214,10 +220,10 @@ public class ExecutionStartService implements IExecutionStartService {
                 throw new CerberusException(mes);
             } else {
                 CountryEnvironmentParameters cea;
-                cea = this.factorycountryEnvironmentParameters.create(tCExecution.getApplicationObj().getSystem(), tCExecution.getCountry(), tCExecution.getEnvironment(), tCExecution.getApplicationObj().getApplication(), tCExecution.getMyHost(), "", tCExecution.getMyContextRoot(), tCExecution.getMyLoginRelativeURL(), "", "", "", "");
+                cea = this.factorycountryEnvironmentParameters.create(tCExecution.getApplicationObj().getSystem(), tCExecution.getCountry(), tCExecution.getEnvironment(), tCExecution.getApplicationObj().getApplication(), tCExecution.getMyHost(), "", tCExecution.getMyContextRoot(), tCExecution.getMyLoginRelativeURL(), "", "", "", "", countryEnvironmentParametersService.defaultPoolSize());
                 cea.setIp(tCExecution.getMyHost());
                 cea.setUrl(tCExecution.getMyContextRoot());
-                tCExecution.setUrl(cea.getIp() + cea.getUrl());
+                tCExecution.setUrl(StringUtil.getURLFromString(cea.getIp(), cea.getUrl(), "", ""));
                 cea.setUrlLogin(tCExecution.getMyLoginRelativeURL());
                 tCExecution.setCountryEnvironmentParameters(cea);
                 LOG.debug(" -> Execution will be done with manual application connectivity setting. IP/URL/LOGIN : " + cea.getIp() + "-" + cea.getUrl() + "-" + cea.getUrlLogin());
@@ -244,7 +250,7 @@ public class ExecutionStartService implements IExecutionStartService {
                         tCExecution.getApplicationObj().getSystem(), tCExecution.getCountry(), tCExecution.getEnvironment(), tCExecution.getApplicationObj().getApplication()));
                 if (cea != null) {
                     tCExecution.setCountryEnvironmentParameters(cea);
-                    tCExecution.setUrl(cea.getIp() + cea.getUrl());
+                    tCExecution.setUrl(StringUtil.getURLFromString(cea.getIp(), cea.getUrl(), "", ""));
                 } else {
                     MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_COUNTRYENVAPP_NOT_FOUND);
                     mes.setDescription(mes.getDescription().replace("%COUNTRY%", tCExecution.getCountry()));
@@ -319,30 +325,31 @@ public class ExecutionStartService implements IExecutionStartService {
         LOG.debug("Country/Environment Information Loaded. " + tCExecution.getCountry() + " - " + tCExecution.getEnvironmentData());
 
         /**
-         * Get the cerberus_action_wait_default parameter. This parameter will be used 
-         * by tha wait action if no timeout/event is defined.
+         * If Timeout is defined at the execution level, set action wait default
+         * to this value, else Get the cerberus_action_wait_default parameter.
+         * This parameter will be used by tha wait action if no timeout/event is
+         * defined.
          */
         try {
-            AnswerItem timeoutParameter = parameterService.readWithSystem1ByKey("", "cerberus_action_wait_default", tCExecution.getApplicationObj().getSystem());
-            if (timeoutParameter != null && timeoutParameter.isCodeStringEquals(MessageEventEnum.DATA_OPERATION_OK.getCodeString())) {
-                if (((Parameter) timeoutParameter.getItem()).getSystem1value().isEmpty()) {
-                    tCExecution.setCerberus_action_wait_default(Integer.valueOf(((Parameter) timeoutParameter.getItem()).getValue()));
+            if (!tCExecution.getTimeout().isEmpty()) {
+                tCExecution.setCerberus_action_wait_default(Integer.valueOf(tCExecution.getTimeout()));
+            } else {
+                AnswerItem timeoutParameter = parameterService.readWithSystem1ByKey("", "cerberus_action_wait_default", tCExecution.getApplicationObj().getSystem());
+                if (timeoutParameter != null && timeoutParameter.isCodeStringEquals(MessageEventEnum.DATA_OPERATION_OK.getCodeString())) {
+                    if (((Parameter) timeoutParameter.getItem()).getSystem1value().isEmpty()) {
+                        tCExecution.setCerberus_action_wait_default(Integer.valueOf(((Parameter) timeoutParameter.getItem()).getValue()));
+                    } else {
+                        tCExecution.setCerberus_action_wait_default(Integer.valueOf(((Parameter) timeoutParameter.getItem()).getSystem1value()));
+                    }
                 } else {
-                    tCExecution.setCerberus_action_wait_default(Integer.valueOf(((Parameter) timeoutParameter.getItem()).getSystem1value()));
+                    LOG.warn("Parameter cerberus_action_wait_default not set in Parameter table, default value set to 90000 milliseconds. ");
+                    tCExecution.setCerberus_action_wait_default(90000);
                 }
-            }  else {
-                LOG.warn("Parameter cerberus_action_wait_default not set in Parameter table, default value set to 90000 milliseconds. ");
-                tCExecution.setCerberus_action_wait_default(90000);
             }
         } catch (NumberFormatException ex) {
             LOG.warn("Parameter cerberus_action_wait_default must be an integer, default value set to 90000 milliseconds. " + ex.toString());
             tCExecution.setCerberus_action_wait_default(90000);
         }
-
-        /**
-         * What is that for ???
-         */
-        tCExecution.setManualExecution("N");
 
         /**
          * Check if test can be executed TODO : Replace Message with try/catch
@@ -361,12 +368,9 @@ public class ExecutionStartService implements IExecutionStartService {
         LOG.debug("Checks performed -- > OK to continue.");
 
         /**
-         * Check if Browser is supported and if selenium server is reachable.
+         * For GUI application, check if Browser is supported.
          */
-        if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")
-                || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
-                || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")) {
-
+        if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")) {
             try {
                 myInvariant = this.invariantService.findInvariantByIdValue("BROWSER", tCExecution.getBrowser());
             } catch (CerberusException ex) {
@@ -375,6 +379,15 @@ public class ExecutionStartService implements IExecutionStartService {
                 LOG.debug(mes.getDescription());
                 throw new CerberusException(mes);
             }
+        }
+
+        /**
+         * Start server
+         */
+        if (tCExecution.getApplicationObj().getType().equalsIgnoreCase("GUI")
+                || tCExecution.getApplicationObj().getType().equalsIgnoreCase("APK")
+                || tCExecution.getApplicationObj().getType().equalsIgnoreCase("IPA")
+                || tCExecution.getApplicationObj().getType().equalsIgnoreCase("FAT")) {
 
             if (tCExecution.getIp().equalsIgnoreCase("")) {
                 MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_SELENIUM_EMPTYORBADIP);
@@ -392,14 +405,14 @@ public class ExecutionStartService implements IExecutionStartService {
             /**
              * Start Selenium server
              */
-            LOG.debug("Starting Selenium Server.");
+            LOG.debug("Starting Server.");
             try {
                 this.serverService.startServer(tCExecution);
             } catch (CerberusException ex) {
                 LOG.debug(ex.getMessageError().getDescription());
                 throw new CerberusException(ex.getMessageError());
             }
-            LOG.debug("Selenium Server Started.");
+            LOG.debug("Server Started.");
 
         }
 
@@ -443,6 +456,13 @@ public class ExecutionStartService implements IExecutionStartService {
         } catch (Exception ex) {
             LOG.warn(ex.toString());
         }
+
+        /**
+         * Feature Flipping. Should be removed when websocket push is fully
+         * working
+         */
+        tCExecution.setCerberus_featureflipping_activatewebsocketpush(parameterService.getParameterBooleanByKey("cerberus_featureflipping_activatewebsocketpush", "", false));
+        tCExecution.setCerberus_featureflipping_websocketpushperiod(parameterService.getParameterLongByKey("cerberus_featureflipping_websocketpushperiod", "", 5000));
 
         return tCExecution;
     }
